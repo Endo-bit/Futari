@@ -55,7 +55,8 @@ export default function SettingsScreen() {
         AsyncStorage.getItem(REMINDER_TIME_KEY),
       ]);
       const p = await api.getNotificationPrefs().catch(() => ({}));
-      setRevealNotifOn(p.revealNotifOn ?? true);
+      const wantsRevealNotif = p.revealNotifOn ?? true;
+      setRevealNotifOn(wantsRevealNotif);
       setPushSubscribed(!!p.hasSubscription);
 
       const on = storedOn != null ? storedOn === "1" : !!p.reminderOn;
@@ -68,6 +69,18 @@ export default function SettingsScreen() {
         if (granted) {
           const [h, m] = time.split(":").map(Number);
           scheduleDailyReminder(h, m, reminderContent(t)).catch(() => {});
+        }
+      }
+
+      // Reveal-time notifications default to on server-side, but we only ever get an
+      // Expo push token onto the server once the user grants permission — do that
+      // proactively here instead of waiting for a toggle tap that may never happen
+      // (the switch already reads as "on" so there's nothing to tap).
+      if (wantsRevealNotif && !p.hasSubscription) {
+        const token = await registerForPushNotifications().catch(() => null);
+        if (token) {
+          await api.saveExpoPushToken(token).catch(() => {});
+          setPushSubscribed(true);
         }
       }
     })();
@@ -329,7 +342,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   headerRow: { paddingHorizontal: 22, paddingTop: 18, paddingBottom: 6 },
-  h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, color: C.ink },
+  h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, paddingRight: 10, color: C.ink },
   section: { paddingHorizontal: 18, paddingTop: 8 },
   card: { backgroundColor: C.card, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
   avatarPair: { width: 44, height: 32 },
@@ -340,7 +353,7 @@ const styles = StyleSheet.create({
   notPaired: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.inkSoft },
   premiumNote: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: C.pink, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
   premiumNoteText: { fontFamily: fonts.bodyBold, fontSize: 12.5, color: C.pinkText, flex: 1 },
-  inviteCode: { fontFamily: fonts.scriptBold, fontSize: 28, lineHeight: 42, paddingVertical: 3, letterSpacing: 3, color: C.ink },
+  inviteCode: { fontFamily: fonts.scriptBold, fontSize: 28, lineHeight: 42, paddingVertical: 3, paddingRight: 8, letterSpacing: 3, color: C.ink },
   copyBtn: { borderRadius: 999, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff", paddingVertical: 8, paddingHorizontal: 16 },
   copyBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.pinkText },
   generateBtn: { backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 11, paddingHorizontal: 16, alignSelf: "flex-start" },

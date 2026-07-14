@@ -67,7 +67,7 @@ export default function InlineEditor({ visible, field, initialValue, onSave, onC
 
 const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 8 },
-  title: { fontFamily: fonts.scriptSemiBold, fontSize: 27, lineHeight: 40, paddingVertical: 3, color: C.ink },
+  title: { fontFamily: fonts.scriptSemiBold, fontSize: 27, lineHeight: 40, paddingVertical: 3, paddingRight: 8, color: C.ink },
   body: { paddingHorizontal: 18, paddingVertical: 10, flexGrow: 1 },
   textarea: {
     minHeight: 180,

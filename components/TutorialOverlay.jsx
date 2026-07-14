@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: { position: "absolute", top: 14, right: 14, padding: 4 },
   iconCircle: { width: 56, height: 56, borderRadius: 999, backgroundColor: C.pink, alignItems: "center", justifyContent: "center" },
-  title: { fontFamily: fonts.scriptSemiBold, fontSize: 28, lineHeight: 42, paddingVertical: 3, color: C.ink },
+  title: { fontFamily: fonts.scriptSemiBold, fontSize: 28, lineHeight: 42, paddingVertical: 3, paddingRight: 8, color: C.ink },
   body: { fontFamily: fonts.bodyRegular, fontSize: 14.5, lineHeight: 22, color: C.ink, textAlign: "center" },
   dots: { flexDirection: "row", gap: 6, marginVertical: 2 },
   dot: { width: 7, height: 7, borderRadius: 999, backgroundColor: C.cardBorder },

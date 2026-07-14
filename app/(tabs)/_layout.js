@@ -62,6 +62,6 @@ export default function TabsLayout() {
 const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 22, paddingTop: 14, paddingBottom: 4 },
   logo: { width: 26, height: 26, borderRadius: 8 },
-  wordmark: { fontFamily: fonts.scriptBold, fontSize: 24, lineHeight: 36, paddingVertical: 3, color: C.ink },
+  wordmark: { fontFamily: fonts.scriptBold, fontSize: 24, lineHeight: 36, paddingVertical: 3, paddingRight: 8, color: C.ink },
   userButton: { marginLeft: "auto" },
 });
