@@ -46,7 +46,7 @@ export default function SettingsScreen() {
   const [reminderTime, setReminderTime] = useState("21:00");
   const [pushSubscribed, setPushSubscribed] = useState(false);
 
-  const reminderContent = (tt) => ({ title: tt.reminder, body: tt.todaysPage });
+  const reminderContent = (tt) => ({ title: tt.reminderNotifTitle, body: tt.reminderNotifBody });
 
   useEffect(() => {
     (async () => {

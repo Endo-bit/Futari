@@ -40,6 +40,7 @@ export default function Paywall() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [error, setError] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState("monthly");
 
   useEffect(() => {
     if (!Purchases) {
@@ -49,7 +50,9 @@ export default function Paywall() {
     let cancelled = false;
     Purchases.getOfferings()
       .then((o) => {
-        if (!cancelled) setOffering(o.current);
+        if (cancelled) return;
+        setOffering(o.current);
+        if (!o.current?.monthly && o.current?.annual) setSelectedPlan("annual");
       })
       .catch(() => {
         if (!cancelled) setError(true);
@@ -62,7 +65,10 @@ export default function Paywall() {
     };
   }, [Purchases]);
 
-  const pkg = offering?.availablePackages?.[0];
+  const monthlyPkg = offering?.monthly || null;
+  const annualPkg = offering?.annual || null;
+  const hasBothPlans = !!monthlyPkg && !!annualPkg;
+  const pkg = (selectedPlan === "annual" ? annualPkg : monthlyPkg) || annualPkg || monthlyPkg || offering?.availablePackages?.[0];
 
   const handlePurchase = async () => {
     if (!Purchases || !pkg) return;
@@ -128,6 +134,28 @@ export default function Paywall() {
           </View>
         ) : pkg ? (
           <>
+            {hasBothPlans && (
+              <View style={styles.planRow}>
+                <Pressable
+                  onPress={() => setSelectedPlan("monthly")}
+                  style={[styles.planBtn, selectedPlan === "monthly" && styles.planBtnSel]}
+                >
+                  <Text style={[styles.planLabel, { color: selectedPlan === "monthly" ? "#fff" : C.ink }]}>{t.paywallMonthlyLabel}</Text>
+                  <Text style={[styles.planPrice, { color: selectedPlan === "monthly" ? "#fff" : C.inkSoft }]}>
+                    {monthlyPkg.product.priceString}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setSelectedPlan("annual")}
+                  style={[styles.planBtn, selectedPlan === "annual" && styles.planBtnSel]}
+                >
+                  <Text style={[styles.planLabel, { color: selectedPlan === "annual" ? "#fff" : C.ink }]}>{t.paywallYearlyLabel}</Text>
+                  <Text style={[styles.planPrice, { color: selectedPlan === "annual" ? "#fff" : C.inkSoft }]}>
+                    {annualPkg.product.priceString}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
             <View style={styles.priceCard}>
               <Text style={styles.priceLabel}>{pkg.product.priceString}</Text>
               <Text style={styles.trialNote}>{t.paywallTrialNote}</Text>
@@ -160,6 +188,11 @@ const styles = StyleSheet.create({
   featureRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
   featureIcon: { width: 30, height: 30, borderRadius: 999, backgroundColor: C.pink, alignItems: "center", justifyContent: "center" },
   featureLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.ink, flex: 1 },
+  planRow: { flexDirection: "row", gap: 10, width: "100%", marginBottom: 14 },
+  planBtn: { flex: 1, borderRadius: 16, paddingVertical: 12, alignItems: "center", backgroundColor: C.card, borderWidth: 1.5, borderColor: C.cardBorder },
+  planBtnSel: { backgroundColor: C.pinkDeep, borderColor: C.pinkDeep },
+  planLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14 },
+  planPrice: { fontFamily: fonts.bodyBold, fontSize: 12.5, marginTop: 2 },
   priceCard: { width: "100%", backgroundColor: C.greenSoft, borderRadius: 18, padding: 16, alignItems: "center", marginBottom: 16 },
   priceLabel: { fontFamily: fonts.scriptBold, fontSize: 30, lineHeight: 44, paddingVertical: 3, color: C.ink },
   trialNote: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: C.inkSoft, textAlign: "center", marginTop: 4, lineHeight: 18 },
