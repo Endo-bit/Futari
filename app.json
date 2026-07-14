@@ -31,7 +31,8 @@
       "expo-localization",
       "@clerk/expo",
       "expo-splash-screen",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-notifications"
     ],
     "extra": {
       "router": {},

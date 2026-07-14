@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.paper, alignItems: "center", justifyContent: "center" },
   card: { width: "100%", maxWidth: 430, alignItems: "center", paddingHorizontal: 32, gap: 22 },
   logo: { width: 56, height: 56, borderRadius: 14 },
-  title: { fontFamily: fonts.scriptBold, fontSize: 46, lineHeight: 58, color: C.ink },
+  title: { fontFamily: fonts.scriptBold, fontSize: 46, lineHeight: 68, paddingVertical: 4, color: C.ink },
   tagline: { fontFamily: fonts.bodyRegular, fontSize: 15, lineHeight: 24, color: C.inkSoft, textAlign: "center", maxWidth: 320 },
   buttons: { width: "100%", maxWidth: 260, gap: 12, marginTop: 10 },
   primaryBtn: { backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 15, alignItems: "center" },

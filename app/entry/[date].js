@@ -112,11 +112,11 @@ export default function EntryDetail() {
 
 const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6 },
-  title: { fontFamily: fonts.scriptSemiBold, fontSize: 28, lineHeight: 35, color: C.ink },
+  title: { fontFamily: fonts.scriptSemiBold, fontSize: 28, lineHeight: 42, paddingVertical: 3, color: C.ink },
   body: { paddingHorizontal: 18, paddingTop: 8, gap: 14 },
   promptCard: { backgroundColor: C.pink, borderRadius: 20, padding: 18 },
   promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.pinkText, marginBottom: 4 },
-  promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 24, color: C.ink, lineHeight: 32 },
+  promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 24, color: C.ink, lineHeight: 36, paddingVertical: 3 },
   moodBadge: { width: 46, height: 46, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: C.pink, borderWidth: 2.5, borderColor: C.pinkDeep },
   divider: { height: 1, backgroundColor: C.cardBorder },
   who: { fontFamily: fonts.bodyExtraBold, fontSize: 13, color: C.inkSoft },

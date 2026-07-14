@@ -128,7 +128,7 @@ export default function MindEditor({ visible, initialValue, initialTag, onSave, 
 
 const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 8 },
-  title: { fontFamily: fonts.scriptSemiBold, fontSize: 27, lineHeight: 34, color: C.ink },
+  title: { fontFamily: fonts.scriptSemiBold, fontSize: 27, lineHeight: 40, paddingVertical: 3, color: C.ink },
   tagRow: { flexDirection: "row", gap: 8, paddingHorizontal: 18, paddingTop: 6, paddingBottom: 4 },
   tagBtn: { borderRadius: 999, paddingVertical: 7, paddingHorizontal: 16, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: C.card },
   tagBtnSel: { borderColor: C.pinkDeep, backgroundColor: C.pink },

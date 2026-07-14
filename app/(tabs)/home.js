@@ -245,7 +245,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6 },
-  h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 42, color: C.ink },
+  h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, color: C.ink },
   section: { paddingHorizontal: 18, paddingTop: 10 },
   togetherCard: {
     position: "relative",
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   editBtn: { position: "absolute", top: 12, right: 12, backgroundColor: "rgba(255,255,255,0.6)", borderRadius: 999, width: 30, height: 30, alignItems: "center", justifyContent: "center" },
   togetherLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11.5, letterSpacing: 1.5, color: C.pinkText, textTransform: "uppercase", marginBottom: 6 },
-  togetherNumber: { fontFamily: fonts.scriptBold, fontSize: 56, color: C.ink, lineHeight: 72 },
+  togetherNumber: { fontFamily: fonts.scriptBold, fontSize: 56, color: C.ink, lineHeight: 84, paddingVertical: 4 },
   togetherSince: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.inkSoft, marginTop: 6 },
   setDateBtn: { marginTop: 6, backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 18 },
   setDateLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: "#fff" },
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   streakCard: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.card, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
   streakText: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: C.ink },
   quizCard: { backgroundColor: C.pink, borderRadius: 20, padding: 18 },
-  quizQ: { fontFamily: fonts.scriptSemiBold, fontSize: 21, color: C.ink, lineHeight: 28, marginBottom: 10 },
+  quizQ: { fontFamily: fonts.scriptSemiBold, fontSize: 21, color: C.ink, lineHeight: 32, paddingVertical: 3, marginBottom: 10 },
   quizRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
   quizBtn: { flex: 1, borderRadius: 999, paddingVertical: 9, alignItems: "center", backgroundColor: "#fff" },
   quizBtnSel: { backgroundColor: C.pinkDeep },
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   textarea: { minHeight: 50, backgroundColor: "#fff", borderWidth: 1, borderColor: C.cardBorder, borderRadius: 12, padding: 12, fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.ink, textAlignVertical: "top" },
   promptCard: { backgroundColor: C.greenSoft, borderRadius: 20, padding: 18 },
   promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.inkSoft, marginBottom: 4 },
-  promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 24, color: C.ink, lineHeight: 32 },
+  promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 24, color: C.ink, lineHeight: 36, paddingVertical: 3 },
   promptAnswers: { marginTop: 12, gap: 6 },
   promptAnswerLine: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.ink, lineHeight: 19 },
   promptAnswerWho: { fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: C.inkSoft },

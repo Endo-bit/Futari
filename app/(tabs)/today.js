@@ -261,12 +261,12 @@ export default function TodayScreen() {
 
 const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6, gap: 4 },
-  h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 42, color: C.ink, flex: 1 },
+  h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, color: C.ink, flex: 1 },
   dateLabel: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: C.pinkText },
   section: { paddingHorizontal: 18, paddingTop: 8 },
   promptCard: { backgroundColor: C.pink, borderRadius: 20, padding: 18 },
   promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.pinkText, marginBottom: 4 },
-  promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 24, color: C.ink, lineHeight: 32 },
+  promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 24, color: C.ink, lineHeight: 36, paddingVertical: 3 },
   promptInput: { marginTop: 10, minHeight: 60, backgroundColor: "#fff", borderWidth: 1, borderColor: C.cardBorder, borderRadius: 12, padding: 12, fontFamily: fonts.bodyRegular, fontSize: 14, color: C.ink, textAlignVertical: "top" },
   who: { fontFamily: fonts.bodyExtraBold, fontSize: 13, color: C.inkSoft },
   divider: { height: 1, backgroundColor: C.cardBorder, marginVertical: 6 },

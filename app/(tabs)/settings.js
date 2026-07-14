@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, Alert, Share, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import {
@@ -13,7 +14,15 @@ import { useApp } from "../../lib/appState";
 import { useEntitlement } from "../../lib/entitlement";
 import { LANGS, T } from "../../lib/i18n";
 import { buildExportText } from "../../lib/exportText";
-import { registerForPushNotifications } from "../../lib/pushNotifications";
+import {
+  registerForPushNotifications,
+  ensureNotificationPermission,
+  scheduleDailyReminder,
+  cancelDailyReminder,
+} from "../../lib/pushNotifications";
+
+const REMINDER_ON_KEY = "futari_reminder_on";
+const REMINDER_TIME_KEY = "futari_reminder_time";
 
 function Row({ icon, label, right, onPress, danger, last }) {
   return (
@@ -36,13 +45,32 @@ export default function SettingsScreen() {
   const [revealNotifOn, setRevealNotifOn] = useState(true);
   const [reminderTime, setReminderTime] = useState("21:00");
   const [pushSubscribed, setPushSubscribed] = useState(false);
+
+  const reminderContent = (tt) => ({ title: tt.reminder, body: tt.todaysPage });
+
   useEffect(() => {
-    api.getNotificationPrefs().then((p) => {
-      setReminderOn(p.reminderOn);
-      setRevealNotifOn(p.revealNotifOn);
-      setPushSubscribed(p.hasSubscription);
-      if (p.reminderTime) setReminderTime(p.reminderTime);
-    });
+    (async () => {
+      const [storedOn, storedTime] = await Promise.all([
+        AsyncStorage.getItem(REMINDER_ON_KEY),
+        AsyncStorage.getItem(REMINDER_TIME_KEY),
+      ]);
+      const p = await api.getNotificationPrefs().catch(() => ({}));
+      setRevealNotifOn(p.revealNotifOn ?? true);
+      setPushSubscribed(!!p.hasSubscription);
+
+      const on = storedOn != null ? storedOn === "1" : !!p.reminderOn;
+      const time = storedTime || p.reminderTime || "21:00";
+      setReminderOn(on);
+      setReminderTime(time);
+
+      if (on) {
+        const granted = await ensureNotificationPermission();
+        if (granted) {
+          const [h, m] = time.split(":").map(Number);
+          scheduleDailyReminder(h, m, reminderContent(t)).catch(() => {});
+        }
+      }
+    })();
   }, []); // eslint-disable-line
 
   const ensurePushRegistered = async () => {
@@ -58,9 +86,20 @@ export default function SettingsScreen() {
   };
   const toggleReminder = async () => {
     const next = !reminderOn;
-    if (next && !(await ensurePushRegistered())) return;
+    if (next) {
+      const granted = await ensureNotificationPermission();
+      if (!granted) {
+        showToast(t.pushDenied, "info");
+        return;
+      }
+      const [h, m] = reminderTime.split(":").map(Number);
+      await scheduleDailyReminder(h, m, reminderContent(t));
+    } else {
+      await cancelDailyReminder();
+    }
     setReminderOn(next);
-    await api.saveNotificationPrefs({ reminderOn: next, revealNotifOn, reminderTime });
+    await AsyncStorage.setItem(REMINDER_ON_KEY, next ? "1" : "0");
+    api.saveNotificationPrefs({ reminderOn: next, revealNotifOn, reminderTime }).catch(() => {});
   };
   const toggleRevealNotif = async () => {
     const next = !revealNotifOn;
@@ -70,7 +109,12 @@ export default function SettingsScreen() {
   };
   const changeReminderTime = async (time) => {
     setReminderTime(time);
-    await api.saveNotificationPrefs({ reminderOn, revealNotifOn, reminderTime: time });
+    await AsyncStorage.setItem(REMINDER_TIME_KEY, time);
+    if (reminderOn) {
+      const [h, m] = time.split(":").map(Number);
+      await scheduleDailyReminder(h, m, reminderContent(t));
+    }
+    api.saveNotificationPrefs({ reminderOn, revealNotifOn, reminderTime: time }).catch(() => {});
   };
 
   const [inviteCode, setInviteCode] = useState(null);
@@ -285,7 +329,7 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   headerRow: { paddingHorizontal: 22, paddingTop: 18, paddingBottom: 6 },
-  h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 42, color: C.ink },
+  h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, color: C.ink },
   section: { paddingHorizontal: 18, paddingTop: 8 },
   card: { backgroundColor: C.card, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
   avatarPair: { width: 44, height: 32 },
@@ -296,7 +340,7 @@ const styles = StyleSheet.create({
   notPaired: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.inkSoft },
   premiumNote: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: C.pink, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
   premiumNoteText: { fontFamily: fonts.bodyBold, fontSize: 12.5, color: C.pinkText, flex: 1 },
-  inviteCode: { fontFamily: fonts.scriptBold, fontSize: 28, lineHeight: 36, letterSpacing: 3, color: C.ink },
+  inviteCode: { fontFamily: fonts.scriptBold, fontSize: 28, lineHeight: 42, paddingVertical: 3, letterSpacing: 3, color: C.ink },
   copyBtn: { borderRadius: 999, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff", paddingVertical: 8, paddingHorizontal: 16 },
   copyBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.pinkText },
   generateBtn: { backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 11, paddingHorizontal: 16, alignSelf: "flex-start" },
