@@ -16,7 +16,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FAF4E7",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -32,7 +32,13 @@
       "@clerk/expo",
       "expo-splash-screen",
       "@react-native-community/datetimepicker",
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#E6AEB9"
+        }
+      ]
     ],
     "extra": {
       "router": {},

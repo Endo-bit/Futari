@@ -31,7 +31,7 @@ function FeatureRow({ icon, label }) {
 export default function Paywall() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { t } = useApp();
+  const { t, showToast } = useApp();
   const { isAvailable, refresh } = useEntitlement();
   const insets = useSafeAreaInsets();
   const Purchases = loadPurchases();
@@ -53,9 +53,15 @@ export default function Paywall() {
         if (cancelled) return;
         setOffering(o.current);
         if (!o.current?.monthly && o.current?.annual) setSelectedPlan("annual");
+        const hasAnyPackage = !!(o.current?.monthly || o.current?.annual || o.current?.availablePackages?.length);
+        if (!hasAnyPackage) {
+          console.warn("[paywall] no packages in current offering:", JSON.stringify(o));
+          setError("No packages found in RevenueCat's current offering.");
+        }
       })
-      .catch(() => {
-        if (!cancelled) setError(true);
+      .catch((err) => {
+        console.error("[paywall] getOfferings failed:", err);
+        if (!cancelled) setError(err?.message || true);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -79,7 +85,10 @@ export default function Paywall() {
       await refresh();
       router.back();
     } catch (err) {
-      if (!err?.userCancelled) setError(true);
+      if (!err?.userCancelled) {
+        console.error("[paywall] purchasePackage failed:", err);
+        showToast(err?.message || t.paywallError, "info");
+      }
     } finally {
       setPurchasing(false);
     }
@@ -93,8 +102,9 @@ export default function Paywall() {
       await Purchases.restorePurchases();
       await refresh();
       router.back();
-    } catch {
-      setError(true);
+    } catch (err) {
+      console.error("[paywall] restorePurchases failed:", err);
+      showToast(err?.message || t.paywallError, "info");
     } finally {
       setPurchasing(false);
     }
@@ -166,7 +176,10 @@ export default function Paywall() {
             </Pressable>
           </>
         ) : (
-          <Text style={styles.unavailable}>{error ? t.paywallError : t.paywallLoading}</Text>
+          <Text style={styles.unavailable}>
+            {error ? t.paywallError : t.paywallLoading}
+            {typeof error === "string" ? `\n(${error})` : ""}
+          </Text>
         )}
 
         <Pressable onPress={() => router.back()} style={{ marginTop: 18 }}>

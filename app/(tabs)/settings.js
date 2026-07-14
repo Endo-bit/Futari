@@ -4,7 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import {
-  Heart, Globe, Bell, Download, Trash2, Link2Off, Check, Lock, HelpCircle,
+  Heart, Globe, Bell, Download, Trash2, Link2Off, Check, Lock, HelpCircle, Sparkles, ChevronRight,
 } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import Pill from "../../components/Pill";
@@ -293,6 +293,19 @@ export default function SettingsScreen() {
             )}
           </View>
 
+          {!isPremium && (
+            <Pressable onPress={() => router.push("/paywall")} style={styles.premiumCard}>
+              <View style={styles.premiumCardIcon}>
+                <Sparkles size={18} color="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.premiumCardTitle}>{t.paywallTitle}</Text>
+                <Text style={styles.premiumCardSub}>{t.upgradeToPremium}</Text>
+              </View>
+              <ChevronRight size={18} color="#fff" />
+            </Pressable>
+          )}
+
           <View style={styles.card}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 10 }}>
               <Globe size={17} color={C.inkSoft} />
@@ -345,6 +358,10 @@ const styles = StyleSheet.create({
   h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, paddingRight: 10, color: C.ink },
   section: { paddingHorizontal: 18, paddingTop: 8 },
   card: { backgroundColor: C.card, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
+  premiumCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.pinkDeep, borderRadius: 20, padding: 16, ...cardShadow },
+  premiumCardIcon: { width: 34, height: 34, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.3)", alignItems: "center", justifyContent: "center" },
+  premiumCardTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
+  premiumCardSub: { fontFamily: fonts.bodyRegular, fontSize: 12, color: "rgba(255,255,255,0.9)", marginTop: 2 },
   avatarPair: { width: 44, height: 32 },
   avatarDot: { position: "absolute", width: 32, height: 32, borderRadius: 999, opacity: 0.85 },
   pairedWith: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
