@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, Alert, Share, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, Alert, Share, StyleSheet, Linking, Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
+import { useAuth } from "@clerk/expo";
 import * as Clipboard from "expo-clipboard";
 import {
-  Heart, Globe, Bell, Download, Trash2, Link2Off, Check, Lock, HelpCircle, Sparkles, ChevronRight,
+  Heart, Globe, Bell, Download, Trash2, Link2Off, Check, Lock, HelpCircle, Sparkles, ChevronRight, CreditCard,
 } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import Pill from "../../components/Pill";
@@ -36,6 +37,7 @@ function Row({ icon, label, right, onPress, danger, last }) {
 
 export default function SettingsScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
   const {
     t, lang, setLang, me, setMe, refreshMe, partnerName, api, showToast, openTutorial, todayIso,
   } = useApp();
@@ -213,6 +215,34 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleManageSubscription = () => {
+    const url =
+      Platform.OS === "ios"
+        ? "itms-apps://apps.apple.com/account/subscriptions"
+        : "https://play.google.com/store/account/subscriptions";
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert("", t.deleteAccConfirm, [
+      { text: t.cancel, style: "cancel" },
+      {
+        text: t.deleteAcc,
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await api.deleteAccount();
+            showToast(t.deleteAccDone, "heart");
+            await signOut();
+            router.replace("/");
+          } catch (err) {
+            showToast(err?.message || t.demoToast, "info");
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <PaperBg>
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
@@ -343,7 +373,10 @@ export default function SettingsScreen() {
             {!!me?.pairId && (
               <Row icon={<Link2Off size={17} color="#C0605C" />} label={t.unpair.replace("{n}", partnerName)} onPress={handleUnpair} danger />
             )}
-            <Row icon={<Trash2 size={17} color="#C0605C" />} label={t.deleteAcc} onPress={() => showToast(t.demoToast, "info")} danger last />
+            {isPremium && (
+              <Row icon={<CreditCard size={17} color={C.inkSoft} />} label={t.manageSubscription} onPress={handleManageSubscription} />
+            )}
+            <Row icon={<Trash2 size={17} color="#C0605C" />} label={t.deleteAcc} onPress={handleDeleteAccount} danger last />
           </View>
 
           <Text style={styles.privacyNote}>{t.privacyNote}</Text>

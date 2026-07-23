@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet, Platform } from "react-native";
+import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet, Platform, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, Redirect } from "expo-router";
 import { useAuth } from "@clerk/expo";
@@ -185,6 +185,16 @@ export default function Paywall() {
         <Pressable onPress={() => router.back()} style={{ marginTop: 18 }}>
           <Text style={styles.notNow}>{t.paywallClose}</Text>
         </Pressable>
+
+        <View style={styles.legalRow}>
+          <Pressable onPress={() => Linking.openURL("https://futari-nine.vercel.app/terms")}>
+            <Text style={styles.legalLink}>{t.termsOfUse}</Text>
+          </Pressable>
+          <Text style={styles.legalDivider}>·</Text>
+          <Pressable onPress={() => Linking.openURL("https://futari-nine.vercel.app/privacy")}>
+            <Text style={styles.legalLink}>{t.privacyPolicy}</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </PaperBg>
   );
@@ -211,5 +221,8 @@ const styles = StyleSheet.create({
   trialNote: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: C.inkSoft, textAlign: "center", marginTop: 4, lineHeight: 18 },
   restore: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.pinkText },
   notNow: { fontFamily: fonts.bodySemiBold, fontSize: 13.5, color: C.inkSoft },
+  legalRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 16 },
+  legalLink: { fontFamily: fonts.bodyRegular, fontSize: 11.5, color: C.inkSoft, textDecorationLine: "underline" },
+  legalDivider: { fontFamily: fonts.bodyRegular, fontSize: 11.5, color: C.inkSoft },
   unavailable: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.inkSoft, textAlign: "center" },
 });
