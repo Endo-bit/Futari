@@ -49,7 +49,8 @@ export default function TodayScreen() {
   const [hearts, setHearts] = useState(false);
 
   const e = getEntry(todayIso);
-  const prompt = t.prompts[dayOfYear(today) % t.prompts.length];
+  const promptList = mode === "pair" ? t.prompts : t.promptsSolo;
+  const prompt = promptList[dayOfYear(today) % promptList.length];
   const wrote = !!(e.happy || e.mind || e.next || e.promptAnswer);
   const revealed = mode === "pair" && !!pairToday?.revealed;
   const alreadySent = !!((pairToday?.myReactions || []).length || pairToday?.myReply);

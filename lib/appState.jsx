@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useMemo, useRef, useCallback } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAuth } from "@clerk/expo";
+import { useAuth, useUser } from "@clerk/expo";
 import { T, LANGS, detectLang } from "./i18n";
 import { useApi } from "./api";
 
@@ -17,6 +17,7 @@ const AppStateContext = createContext(null);
 export function AppStateProvider({ children }) {
   const api = useApi();
   const { isSignedIn } = useAuth();
+  const { user } = useUser();
 
   const [lang, setLangState] = useState("en");
   useEffect(() => {
@@ -55,6 +56,15 @@ export function AppStateProvider({ children }) {
   const setMode = useCallback((m) => setModeState(m), []);
   const spaceId = me ? (mode === "pair" && me.pairSpaceId ? me.pairSpaceId : me.personalSpaceId) : null;
   const partnerName = me?.partner?.firstName || t.partnerFallback;
+  const myName = user?.firstName || t.me;
+  const describeQuizChoice = useCallback(
+    (choice, isMine) => {
+      if (!choice) return t.homeNotAnswered;
+      if (isMine) return choice === "me" ? myName : partnerName;
+      return choice === "me" ? partnerName : myName;
+    },
+    [t, myName, partnerName]
+  );
 
   const [entries, setEntries] = useState({});
   useEffect(() => {
@@ -154,7 +164,7 @@ export function AppStateProvider({ children }) {
     lang, setLang, t,
     today, todayIso,
     me, setMe, refreshMe,
-    mode, setMode, spaceId, partnerName,
+    mode, setMode, spaceId, partnerName, myName, describeQuizChoice,
     entries, setEntries, getEntry, patchEntry,
     pairToday, setPairToday, refreshPairToday,
     specialDays, setSpecialDays,

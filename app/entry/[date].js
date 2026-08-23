@@ -38,7 +38,7 @@ export default function EntryDetail() {
   const { date } = useLocalSearchParams();
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { t, lang, getEntry, mode, me, partnerName, api } = useApp();
+  const { t, lang, getEntry, mode, me, partnerName, myName, describeQuizChoice, api } = useApp();
   const insets = useSafeAreaInsets();
 
   if (!isLoaded) return <View style={{ flex: 1, backgroundColor: C.paper }} />;
@@ -47,6 +47,9 @@ export default function EntryDetail() {
   const e = getEntry(date);
   const d = fromIso(date);
   const title = lang === "ja" ? `${d.getMonth() + 1}月${d.getDate()}日のページ` : `${t.pageOf} ${d.toLocaleDateString(lang)}`;
+  const quizQ = t.coupleQuestions[dayOfYear(d) % t.coupleQuestions.length];
+  const promptList = mode === "pair" ? t.prompts : t.promptsSolo;
+  const prompt = promptList[dayOfYear(d) % promptList.length];
 
   const [pastPairData, setPastPairData] = useState(null);
   useEffect(() => {
@@ -79,7 +82,7 @@ export default function EntryDetail() {
 
         <View style={styles.promptCard}>
           <Text style={styles.promptLabel}>{t.littlePrompt}</Text>
-          <Text style={styles.promptText}>{t.prompts[dayOfYear(d) % t.prompts.length]}</Text>
+          <Text style={styles.promptText}>{prompt}</Text>
         </View>
 
         <PairFieldCards entry={e} t={t} />
@@ -105,6 +108,20 @@ export default function EntryDetail() {
             )}
           </View>
         )}
+
+        {mode === "pair" && (e.quizChoice || pastPairData?.partner?.quizChoice) && (
+          <View style={styles.quizCard}>
+            <Text style={styles.quizQ}>{quizQ}</Text>
+            <View style={{ gap: 3 }}>
+              <Text style={styles.quizAnswer}>
+                {myName}: {describeQuizChoice(e.quizChoice, true)}
+              </Text>
+              <Text style={styles.quizAnswer}>
+                {partnerName}: {describeQuizChoice(pastPairData?.partner?.quizChoice, false)}
+              </Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
     </PaperBg>
   );
@@ -120,4 +137,7 @@ const styles = StyleSheet.create({
   moodBadge: { width: 46, height: 46, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: C.pink, borderWidth: 2.5, borderColor: C.pinkDeep },
   divider: { height: 1, backgroundColor: C.cardBorder },
   who: { fontFamily: fonts.bodyExtraBold, fontSize: 13, color: C.inkSoft },
+  quizCard: { backgroundColor: C.pink, borderRadius: 20, padding: 18 },
+  quizQ: { fontFamily: fonts.scriptSemiBold, fontSize: 21, color: C.ink, lineHeight: 32, paddingVertical: 3, paddingRight: 6, marginBottom: 10 },
+  quizAnswer: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: "#A9798C" },
 });

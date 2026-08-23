@@ -13,7 +13,7 @@ import { dayOfYear } from "../../lib/format";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { t, lang, today, todayIso, me, setMe, mode, api, streak, pairToday, refreshPairToday, partnerName, showToast } = useApp();
+  const { t, lang, today, todayIso, me, setMe, mode, api, streak, pairToday, setPairToday, refreshPairToday, partnerName, myName, describeQuizChoice, showToast } = useApp();
   const [startDateFormOpen, setStartDateFormOpen] = useState(false);
   const [draftStartDate, setDraftStartDate] = useState(me?.startDate || null);
 
@@ -34,7 +34,8 @@ export default function HomeScreen() {
     if (me?.personalSpaceId) AsyncStorage.setItem(`futari_my_next_${me.personalSpaceId}`, text).catch(() => {});
   };
 
-  const prompt = t.prompts[dayOfYear(today) % t.prompts.length];
+  const promptList = mode === "pair" ? t.prompts : t.promptsSolo;
+  const prompt = promptList[dayOfYear(today) % promptList.length];
   const quizQ = t.coupleQuestions[dayOfYear(today) % t.coupleQuestions.length];
   const showCouple = mode === "pair" && !!me?.pairId;
   const daysTogether = me?.startDate ? Math.floor((today - fromIso(me.startDate)) / 86400000) : null;
@@ -44,16 +45,28 @@ export default function HomeScreen() {
   const myPromptAnswer = pairToday?.mine?.promptAnswer || "";
   const partnerPromptAnswer = pairToday?.partner?.promptAnswer || "";
   const showPromptAnswers = showCouple && !!pairToday?.revealed && (!!myPromptAnswer || !!partnerPromptAnswer);
-  const renderChoice = (choice, isMine) => {
-    if (!choice) return t.homeNotAnswered;
-    if (isMine) return choice === "me" ? t.me : partnerName;
-    return choice === "me" ? partnerName : t.me;
-  };
+  const renderChoice = describeQuizChoice;
 
   const answerQuiz = async (choice) => {
     if (!me?.pairSpaceId) return;
-    await api.saveEntry(me.pairSpaceId, todayIso, { quizChoice: choice });
-    refreshPairToday();
+    setPairToday((prev) => ({
+      mine: null,
+      partner: null,
+      wroteMine: false,
+      wrotePartner: false,
+      revealed: false,
+      myReactions: [],
+      myReply: null,
+      partnerReactions: [],
+      partnerReply: null,
+      ...prev,
+      mine: { ...(prev?.mine || {}), quizChoice: choice },
+    }));
+    try {
+      await api.saveEntry(me.pairSpaceId, todayIso, { quizChoice: choice });
+    } finally {
+      refreshPairToday();
+    }
   };
 
   const confirmStartDate = async () => {
@@ -131,7 +144,7 @@ export default function HomeScreen() {
                   return (
                     <Pressable key={choice} onPress={() => answerQuiz(choice)} style={[styles.quizBtn, sel && styles.quizBtnSel]}>
                       <Text style={[styles.quizBtnLabel, { color: sel ? "#fff" : C.ink }]}>
-                        {choice === "me" ? t.me : partnerName}
+                        {choice === "me" ? myName : partnerName}
                       </Text>
                     </Pressable>
                   );
@@ -139,7 +152,7 @@ export default function HomeScreen() {
               </View>
               <View style={{ gap: 3 }}>
                 <Text style={styles.quizAnswer}>
-                  {t.me}: {renderChoice(myQuiz, true)}
+                  {myName}: {renderChoice(myQuiz, true)}
                 </Text>
                 <Text style={styles.quizAnswer}>
                   {partnerName}: {renderChoice(partnerQuiz, false)}
@@ -221,7 +234,7 @@ export default function HomeScreen() {
               <View style={styles.promptAnswers}>
                 {!!myPromptAnswer && (
                   <Text style={styles.promptAnswerLine}>
-                    <Text style={styles.promptAnswerWho}>{t.me}: </Text>
+                    <Text style={styles.promptAnswerWho}>{myName}: </Text>
                     {myPromptAnswer}
                   </Text>
                 )}
