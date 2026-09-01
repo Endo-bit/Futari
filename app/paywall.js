@@ -9,6 +9,7 @@ import SaveButton from "../components/SaveButton";
 import { C, fonts, cardShadow } from "../lib/theme";
 import { useApp } from "../lib/appState";
 import { useEntitlement } from "../lib/entitlement";
+import { formatPrice, deviceRegion } from "../lib/price";
 
 function loadPurchases() {
   if (Platform.OS === "web") return null;
@@ -31,7 +32,7 @@ function FeatureRow({ icon, label }) {
 export default function Paywall() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { t, showToast } = useApp();
+  const { t, lang, showToast } = useApp();
   const { isAvailable, refresh } = useEntitlement();
   const insets = useSafeAreaInsets();
   const Purchases = loadPurchases();
@@ -58,6 +59,18 @@ export default function Paywall() {
           console.warn("[paywall] no packages in current offering:", JSON.stringify(o));
           setError("No packages found in RevenueCat's current offering.");
         }
+        // The currency shown is the App Store *storefront's*, not the device
+        // region's — Apple bills in the store account's country. Log both so a
+        // "why is this in euros?" report can be told apart from a formatting bug.
+        Purchases.getStorefront?.()
+          ?.then((sf) => {
+            console.log(
+              "[paywall] storefront:", sf?.countryCode,
+              "device region:", deviceRegion(),
+              "currency:", o.current?.monthly?.product?.currencyCode || o.current?.annual?.product?.currencyCode
+            );
+          })
+          ?.catch(() => {});
       })
       .catch((err) => {
         console.error("[paywall] getOfferings failed:", err);
@@ -152,7 +165,7 @@ export default function Paywall() {
                 >
                   <Text style={[styles.planLabel, { color: selectedPlan === "monthly" ? "#fff" : C.ink }]}>{t.paywallMonthlyLabel}</Text>
                   <Text style={[styles.planPrice, { color: selectedPlan === "monthly" ? "#fff" : C.inkSoft }]}>
-                    {monthlyPkg.product.priceString}
+                    {formatPrice(monthlyPkg.product, lang)}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -161,13 +174,13 @@ export default function Paywall() {
                 >
                   <Text style={[styles.planLabel, { color: selectedPlan === "annual" ? "#fff" : C.ink }]}>{t.paywallYearlyLabel}</Text>
                   <Text style={[styles.planPrice, { color: selectedPlan === "annual" ? "#fff" : C.inkSoft }]}>
-                    {annualPkg.product.priceString}
+                    {formatPrice(annualPkg.product, lang)}
                   </Text>
                 </Pressable>
               </View>
             )}
             <View style={styles.priceCard}>
-              <Text style={styles.priceLabel}>{pkg.product.priceString}</Text>
+              <Text style={styles.priceLabel}>{formatPrice(pkg.product, lang)}</Text>
               <Text style={styles.trialNote}>{t.paywallTrialNote}</Text>
             </View>
             <SaveButton onPress={handlePurchase} disabled={purchasing} label={t.paywallCta} icon={<Check size={18} color="#fff" />} />

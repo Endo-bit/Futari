@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, Modal, ScrollView, StyleSheet } from "react-native";
+import { View, Text, TextInput, Pressable, Modal, ScrollView, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronLeft, Sun, Heart, Check } from "lucide-react-native";
 import PaperBg from "./PaperBg";
@@ -27,6 +27,7 @@ export default function InlineEditor({ visible, field, initialValue, onSave, onC
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={save}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <PaperBg>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <Pressable onPress={save} style={{ padding: 4 }}>
@@ -61,6 +62,7 @@ export default function InlineEditor({ visible, field, initialValue, onSave, onC
           <SaveButton onPress={save} label={t.save} icon={<Check size={18} color="#fff" />} />
         </View>
       </PaperBg>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

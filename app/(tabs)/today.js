@@ -1,6 +1,9 @@
-import { useState } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
-import { Sun, Cloud, Heart, Smile, Clover, Check } from "lucide-react-native";
+import { useState, useRef, useEffect } from "react";
+import {
+  View, Text, TextInput, Pressable, ScrollView, Keyboard,
+  KeyboardAvoidingView, Platform, StyleSheet,
+} from "react-native";
+import { Sun, Cloud, Heart, Smile, Clover, Check, Share2 } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import ModeToggle from "../../components/ModeToggle";
 import SaveButton from "../../components/SaveButton";
@@ -10,11 +13,14 @@ import SdBanner from "../../components/SdBanner";
 import PairingPrompt from "../../components/PairingPrompt";
 import InlineEditor from "../../components/InlineEditor";
 import MindEditor from "../../components/MindEditor";
+import ShareSheet from "../../components/ShareSheet";
 import FloatingHearts from "../../components/FloatingHearts";
 import { PairFieldCards } from "../../components/FieldCard";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp } from "../../lib/appState";
-import { dayOfYear, dateLabel } from "../../lib/format";
+import { dateLabel } from "../../lib/format";
+import { promptFor } from "../../lib/dailyContent";
+import { maybeRequestReviewAfterFirstReveal } from "../../lib/reviewPrompt";
 
 function ReactionIcons({ ids }) {
   return (
@@ -47,10 +53,18 @@ export default function TodayScreen() {
   const [draftReply, setDraftReply] = useState("");
   const [sendingResponse, setSendingResponse] = useState(false);
   const [hearts, setHearts] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const promptDraft = useRef(null);
+  useEffect(() => {
+    promptDraft.current = null;
+  }, [todayIso]);
 
   const e = getEntry(todayIso);
-  const promptList = mode === "pair" ? t.prompts : t.promptsSolo;
-  const prompt = promptList[dayOfYear(today) % promptList.length];
+  // Once a prompt has been shown/answered for today, keep showing that exact text —
+  // recomputing live would let a mode switch or language change silently swap it out
+  // from under an answer the user already wrote.
+  const prompt = promptFor(t, mode, todayIso, e);
+  const patchToday = (patch) => patchEntry(todayIso, { ...(e.prompt ? {} : { prompt }), ...patch });
   const wrote = !!(e.happy || e.mind || e.next || e.promptAnswer);
   const revealed = mode === "pair" && !!pairToday?.revealed;
   const alreadySent = !!((pairToday?.myReactions || []).length || pairToday?.myReply);
@@ -64,6 +78,14 @@ export default function TodayScreen() {
     setHearts(true);
     showToast(t.revealedToast, "heart");
     setTimeout(() => setHearts(false), 2400);
+    maybeRequestReviewAfterFirstReveal();
+  };
+
+  const handleSave = () => {
+    Keyboard.dismiss();
+    const draft = promptDraft.current;
+    if (draft !== null && draft !== e.promptAnswer) patchToday({ promptAnswer: draft });
+    showToast(t.savedToast);
   };
 
   const toggleDraftReaction = (id) => {
@@ -94,10 +116,20 @@ export default function TodayScreen() {
 
   return (
     <PaperBg style={{ position: "relative" }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+      >
+      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.todaysPage}</Text>
           <Text style={styles.dateLabel}>{dateLabel(today, t, lang)}</Text>
+          {wrote && (
+            <Pressable onPress={() => setShareOpen(true)} style={styles.shareBtn} accessibilityLabel={t.shareTitle}>
+              <Share2 size={17} color={C.pinkText} />
+            </Pressable>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -187,8 +219,11 @@ export default function TodayScreen() {
                     <TextInput
                       key={todayIso}
                       defaultValue={e.promptAnswer}
+                      onChangeText={(text) => {
+                        promptDraft.current = text;
+                      }}
                       onBlur={(ev) => {
-                        if (ev.nativeEvent.text !== e.promptAnswer) patchEntry(todayIso, { promptAnswer: ev.nativeEvent.text });
+                        if (ev.nativeEvent.text !== e.promptAnswer) patchToday({ promptAnswer: ev.nativeEvent.text });
                       }}
                       placeholder={t.promptAnswerPh}
                       placeholderTextColor="#B3A794"
@@ -211,12 +246,12 @@ export default function TodayScreen() {
                     value={e.mood}
                     label={t.mood}
                     onChange={(id) => {
-                      patchEntry(todayIso, { mood: id });
+                      patchToday({ mood: id });
                       if (id) showToast(t.moodToast, "heart");
                     }}
                   />
 
-                  <SaveButton onPress={() => showToast(t.savedToast)} label={t.save} icon={<Check size={18} color="#fff" />} />
+                  <SaveButton onPress={handleSave} label={t.save} icon={<Check size={18} color="#fff" />} />
 
                   {mode === "pair" && me?.pairSpaceId && (
                     <View style={{ alignItems: "center", marginTop: 2 }}>
@@ -233,6 +268,7 @@ export default function TodayScreen() {
           )}
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <FloatingHearts active={hearts} />
 
@@ -241,7 +277,7 @@ export default function TodayScreen() {
         field={editingField}
         initialValue={editingField ? e[editingField] : ""}
         onSave={(text) => {
-          patchEntry(todayIso, { [editingField]: text });
+          patchToday({ [editingField]: text });
           if (text) showToast(t.savedToast);
         }}
         onClose={() => setEditingField(null)}
@@ -251,10 +287,18 @@ export default function TodayScreen() {
         initialValue={e.mind}
         initialTag={e.mindTag}
         onSave={(text, tag) => {
-          patchEntry(todayIso, { mind: text, mindTag: tag });
+          patchToday({ mind: text, mindTag: tag });
           if (text) showToast(t.savedToast);
         }}
         onClose={() => setMindOpen(false)}
+      />
+      <ShareSheet
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+        entry={e}
+        partner={revealed ? pairToday?.partner : null}
+        dateText={dateLabel(today, t, lang)}
+        prompt={prompt}
       />
     </PaperBg>
   );
@@ -264,6 +308,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6, gap: 4 },
   h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, paddingRight: 10, color: C.ink, flex: 1 },
   dateLabel: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: C.pinkText },
+  shareBtn: { marginLeft: 10, width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: C.pink },
   section: { paddingHorizontal: 18, paddingTop: 8 },
   promptCard: { backgroundColor: C.pink, borderRadius: 20, padding: 18 },
   promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.pinkText, marginBottom: 4 },

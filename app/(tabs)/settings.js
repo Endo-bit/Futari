@@ -5,8 +5,10 @@ import { useRouter } from "expo-router";
 import { useAuth } from "@clerk/expo";
 import * as Clipboard from "expo-clipboard";
 import {
-  Heart, Globe, Bell, Download, Trash2, Link2Off, Check, Lock, HelpCircle, Sparkles, ChevronRight, CreditCard,
+  Heart, Globe, Bell, Download, Trash2, Link2Off, Check, Lock, HelpCircle, Sparkles, ChevronRight, CreditCard, Send,
+  LayoutGrid,
 } from "lucide-react-native";
+import { shareInvite } from "../../lib/shareInvite";
 import PaperBg from "../../components/PaperBg";
 import Pill from "../../components/Pill";
 import TimeField from "../../components/TimeField";
@@ -15,6 +17,8 @@ import { useApp } from "../../lib/appState";
 import { useEntitlement } from "../../lib/entitlement";
 import { LANGS, T } from "../../lib/i18n";
 import { buildExportText } from "../../lib/exportText";
+import { WIDGET_MODES } from "../../lib/widgets";
+import { sdTitle } from "../../components/SdBanner";
 import {
   registerForPushNotifications,
   ensureNotificationPermission,
@@ -40,6 +44,7 @@ export default function SettingsScreen() {
   const { signOut } = useAuth();
   const {
     t, lang, setLang, me, setMe, refreshMe, partnerName, api, showToast, openTutorial, todayIso,
+    specialDays, widgetMode, chooseWidgetMode, widgetSpecialDayId, chooseWidgetSpecialDay,
   } = useApp();
   const { isPremium } = useEntitlement();
 
@@ -354,7 +359,58 @@ export default function SettingsScreen() {
             </View>
           </View>
 
+          {Platform.OS === "ios" && (
+            <View style={styles.card}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                <LayoutGrid size={17} color={C.inkSoft} />
+                <Text style={styles.cardHeading}>{t.widgetTitle}</Text>
+              </View>
+              <Text style={styles.widgetHint}>{t.widgetHowTo}</Text>
+
+              <View style={styles.widgetOptions}>
+                {WIDGET_MODES.map((m) => {
+                  const sel = widgetMode === m;
+                  return (
+                    <Pressable key={m} onPress={() => chooseWidgetMode(m)} style={[styles.widgetOption, sel && styles.widgetOptionSel]}>
+                      <View style={[styles.radio, sel && styles.radioOn]}>{sel && <Check size={11} color="#fff" />}</View>
+                      <Text style={[styles.widgetOptionLabel, sel && { color: C.pinkText }]}>
+                        {t.widgetOptions[m].replace("{n}", partnerName)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              {widgetMode === "anniversary" && (
+                <View style={styles.widgetSubSection}>
+                  <Text style={styles.widgetSubLabel}>{t.widgetWhichDay}</Text>
+                  {specialDays.length === 0 ? (
+                    <Text style={styles.widgetHint}>{t.widgetNoSpecialDays}</Text>
+                  ) : (
+                    <View style={styles.widgetChips}>
+                      {specialDays.map((sd) => {
+                        const sel = (widgetSpecialDayId || specialDays[0]?.id) === sd.id;
+                        return (
+                          <Pressable
+                            key={sd.id}
+                            onPress={() => chooseWidgetSpecialDay(sd.id)}
+                            style={[styles.widgetChip, sel && styles.widgetChipSel]}
+                          >
+                            <Text style={[styles.widgetChipLabel, { color: sel ? C.pinkText : C.inkSoft }]} numberOfLines={1}>
+                              {sdTitle(sd, t)}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+
           <View style={[styles.card, { paddingVertical: 4, paddingHorizontal: 18 }]}>
+            <Row icon={<Send size={17} color={C.inkSoft} />} label={t.inviteFriend} onPress={() => shareInvite(t)} />
             <Row icon={<HelpCircle size={17} color={C.inkSoft} />} label={t.tutorialReplay} onPress={openTutorial} />
             <Row icon={<Bell size={17} color={C.inkSoft} />} label={t.reminder} right={<Pill on={reminderOn} />} onPress={toggleReminder} />
             {reminderOn && (
@@ -415,6 +471,19 @@ const styles = StyleSheet.create({
   redeemBtnOn: { backgroundColor: C.pinkDeep },
   redeemBtnOff: { backgroundColor: "#E9DFD2" },
   cardHeading: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
+  widgetHint: { fontFamily: fonts.bodyRegular, fontSize: 12, color: C.inkSoft, lineHeight: 18, marginBottom: 10 },
+  widgetOptions: { gap: 7 },
+  widgetOption: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 13, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff" },
+  widgetOptionSel: { borderColor: C.pinkDeep, backgroundColor: C.pink },
+  widgetOptionLabel: { flex: 1, fontFamily: fonts.bodySemiBold, fontSize: 13, color: C.ink },
+  radio: { width: 18, height: 18, borderRadius: 999, borderWidth: 1.5, borderColor: C.cardBorder, alignItems: "center", justifyContent: "center" },
+  radioOn: { backgroundColor: C.pinkDeep, borderColor: C.pinkDeep },
+  widgetSubSection: { marginTop: 12 },
+  widgetSubLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1, color: C.inkSoft, marginBottom: 8 },
+  widgetChips: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  widgetChip: { maxWidth: "100%", borderRadius: 999, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff" },
+  widgetChipSel: { borderColor: C.pinkDeep, backgroundColor: C.pink },
+  widgetChipLabel: { fontFamily: fonts.bodyBold, fontSize: 12.5 },
   langWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   langBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff" },
   langBtnSel: { borderColor: C.pinkDeep, backgroundColor: C.pink },

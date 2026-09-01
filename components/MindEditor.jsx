@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, Modal, ScrollView, StyleSheet } from "react-native";
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  View, Text, TextInput, Pressable, Modal, ScrollView, ActivityIndicator, Keyboard,
+  KeyboardAvoidingView, Platform, StyleSheet,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { ChevronLeft, Cloud, Heart, Check } from "lucide-react-native";
+import { ChevronLeft, Cloud, Heart, Check, RefreshCw, Sparkles } from "lucide-react-native";
 import PaperBg from "./PaperBg";
 import SaveButton from "./SaveButton";
 import { C, fonts, cardShadow, deepShadow } from "../lib/theme";
@@ -17,6 +20,11 @@ export default function MindEditor({ visible, initialValue, initialTag, onSave, 
   const [sheetDismissed, setSheetDismissed] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [aiLoading, setAiLoading] = useState(false);
+  // The rewrites are of a specific sentence — remember which one they came from so
+  // stale suggestions never sit under text the user has since rewritten.
+  const [aiSourceText, setAiSourceText] = useState("");
+  const [aiFailed, setAiFailed] = useState(false);
+  const requestId = useRef(0);
 
   useEffect(() => {
     if (visible) {
@@ -25,31 +33,54 @@ export default function MindEditor({ visible, initialValue, initialTag, onSave, 
       setSheetOpen(false);
       setSheetDismissed(false);
       setAiSuggestions(null);
+      setAiSourceText("");
+      setAiFailed(false);
     }
   }, [visible, initialValue, initialTag]);
 
   useEffect(() => {
     if (!visible || sheetDismissed || sheetOpen) return;
-    if (t.mindPattern.test(draft)) setSheetOpen(true);
+    if (t.mindPattern.test(draft)) {
+      Keyboard.dismiss();
+      setSheetOpen(true);
+    }
   }, [draft, visible, sheetDismissed, sheetOpen, t]);
 
+  const fetchSuggestions = useCallback(
+    async (text) => {
+      const source = text.trim();
+      if (!source) return;
+      const id = ++requestId.current;
+      setAiLoading(true);
+      setAiFailed(false);
+      setAiSuggestions(null);
+      setAiSourceText(source);
+      try {
+        // The rewrite runs through a hosted model; without a ceiling a stalled
+        // request would leave the sheet spinning with no way out.
+        const res = await Promise.race([
+          api.getGentlerSuggestions(source, lang),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 15000)),
+        ]);
+        if (id !== requestId.current) return;
+        const list = (res?.suggestions || []).map((s) => String(s).trim()).filter(Boolean);
+        if (!list.length) throw new Error("empty");
+        setAiSuggestions(list.slice(0, 3));
+      } catch (err) {
+        if (id !== requestId.current) return;
+        console.warn("[mind] gentler rewrite failed:", err?.message || err);
+        setAiFailed(true);
+      } finally {
+        if (id === requestId.current) setAiLoading(false);
+      }
+    },
+    [api, lang]
+  );
+
+  // Ask as soon as the sheet opens, and again if it's reopened against different text.
   useEffect(() => {
-    if (!sheetOpen || !draft.trim()) return;
-    let cancelled = false;
-    setAiSuggestions(null);
-    setAiLoading(true);
-    api
-      .getGentlerSuggestions(draft.trim(), lang)
-      .then((res) => {
-        if (!cancelled && Array.isArray(res.suggestions) && res.suggestions.length) setAiSuggestions(res.suggestions);
-      })
-      .catch(() => {})
-      .finally(() => {
-        if (!cancelled) setAiLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    if (!sheetOpen) return;
+    if (draft.trim() && draft.trim() !== aiSourceText) fetchSuggestions(draft);
   }, [sheetOpen]); // eslint-disable-line
 
   const save = () => {
@@ -59,6 +90,7 @@ export default function MindEditor({ visible, initialValue, initialTag, onSave, 
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={save}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
       <PaperBg style={{ position: "relative" }}>
         <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
           <Pressable onPress={save} style={{ padding: 4 }}>
@@ -96,7 +128,13 @@ export default function MindEditor({ visible, initialValue, initialTag, onSave, 
             </View>
           )}
           {!sheetOpen && draft.trim().length > 0 && (
-            <Pressable onPress={() => setSheetOpen(true)} style={styles.gentlerLink}>
+            <Pressable
+              onPress={() => {
+                Keyboard.dismiss();
+                setSheetOpen(true);
+              }}
+              style={styles.gentlerLink}
+            >
               <Heart size={14} color={C.pinkText} />
               <Text style={styles.gentlerLinkText}>{t.gentlerTitle}</Text>
             </Pressable>
@@ -115,36 +153,68 @@ export default function MindEditor({ visible, initialValue, initialTag, onSave, 
                 <Heart size={14} color={C.pinkText} />
               </View>
               <Text style={styles.sheetTitle}>{t.gentlerTitle}</Text>
+              {!!aiSuggestions && (
+                <View style={styles.aiBadge}>
+                  <Sparkles size={10} color={C.pinkText} />
+                  <Text style={styles.aiBadgeLabel}>{t.gentlerAiBadge}</Text>
+                </View>
+              )}
             </View>
             <Text style={styles.sheetSub}>{t.gentlerSub}</Text>
-            {aiLoading && !aiSuggestions && <Text style={styles.sheetLoading}>{t.gentlerLoading}</Text>}
-            <View style={{ gap: 9 }}>
-              {(aiSuggestions || t.suggestions).map((s, i) => (
-                <Pressable
-                  key={i}
-                  onPress={() => {
-                    setDraft(s.replace(/^[«„"「]|[»"」“”]$/g, "").replace(/^["“]|["”]$/g, "").trim());
-                    setSheetOpen(false);
-                    setSheetDismissed(true);
-                  }}
-                  style={styles.sheetOption}
-                >
-                  <Text style={styles.sheetOptionText}>{s}</Text>
-                </Pressable>
-              ))}
+
+            {aiLoading ? (
+              <View style={{ gap: 9 }}>
+                <View style={styles.sheetLoadingRow}>
+                  <ActivityIndicator size="small" color={C.pinkText} />
+                  <Text style={styles.sheetLoading}>{t.gentlerLoading}</Text>
+                </View>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={[styles.sheetOption, styles.sheetOptionSkeleton]} />
+                ))}
+              </View>
+            ) : (
+              <>
+                {aiFailed && <Text style={styles.sheetLoading}>{t.gentlerFallbackNote}</Text>}
+                <View style={{ gap: 9 }}>
+                  {(aiSuggestions || t.suggestions).map((s, i) => (
+                    <Pressable
+                      key={i}
+                      onPress={() => {
+                        setDraft(s.replace(/^[«„"「]|[»"」“”]$/g, "").replace(/^["“]|["”]$/g, "").trim());
+                        setSheetOpen(false);
+                        setSheetDismissed(true);
+                      }}
+                      style={styles.sheetOption}
+                    >
+                      <Text style={styles.sheetOptionText}>{s}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            )}
+
+            <View style={styles.sheetFooter}>
+              <Pressable
+                onPress={() => fetchSuggestions(draft)}
+                disabled={aiLoading || !draft.trim()}
+                style={styles.retryBtn}
+              >
+                <RefreshCw size={13} color={C.pinkText} />
+                <Text style={styles.keepWords}>{aiFailed ? t.gentlerRetry : t.gentlerAnother}</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  setSheetOpen(false);
+                  setSheetDismissed(true);
+                }}
+              >
+                <Text style={styles.keepWords}>{t.keepWords}</Text>
+              </Pressable>
             </View>
-            <Pressable
-              onPress={() => {
-                setSheetOpen(false);
-                setSheetDismissed(true);
-              }}
-              style={{ alignSelf: "center", marginTop: 14 }}
-            >
-              <Text style={styles.keepWords}>{t.keepWords}</Text>
-            </Pressable>
           </View>
         )}
       </PaperBg>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -183,7 +253,13 @@ const styles = StyleSheet.create({
   sheetTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 16, color: C.ink },
   sheetSub: { fontFamily: fonts.bodyRegular, fontSize: 13, color: "#A9798C", marginBottom: 12, lineHeight: 19 },
   sheetLoading: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: "#A9798C", marginBottom: 9 },
+  sheetLoadingRow: { flexDirection: "row", alignItems: "center", gap: 8 },
   sheetOption: { backgroundColor: "#fff", borderRadius: 14, padding: 14 },
+  sheetOptionSkeleton: { height: 48, opacity: 0.45 },
   sheetOptionText: { fontFamily: fonts.bodyRegular, fontSize: 14, color: C.ink, lineHeight: 20 },
+  aiBadge: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#fff", borderRadius: 999, paddingVertical: 3, paddingHorizontal: 8 },
+  aiBadgeLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 9.5, letterSpacing: 0.6, color: C.pinkText },
+  sheetFooter: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14 },
+  retryBtn: { flexDirection: "row", alignItems: "center", gap: 6 },
   keepWords: { fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: C.pinkText },
 });

@@ -1,22 +1,38 @@
 import { View, Text, Pressable, StyleSheet, Modal } from "react-native";
+import { useRouter } from "expo-router";
 import { Heart, House, PenLine, CalendarDays, Settings, X } from "lucide-react-native";
 import { C, fonts, deepShadow } from "../lib/theme";
 import { useApp } from "../lib/appState";
 
 export default function TutorialOverlay() {
-  const { tutorialOpen, tutorialStep, setTutorialStep, closeTutorial, t } = useApp();
+  const { tutorialOpen, tutorialStep, setTutorialStep, closeTutorial, tutorialIsFirstRun, me, t } = useApp();
+  const router = useRouter();
   if (!tutorialOpen) return null;
 
+  const showTrialStep = tutorialIsFirstRun && !me?.pairId;
   const steps = [
     { Icon: Heart, iconProps: { fill: C.pinkText }, title: t.tutorialWelcomeTitle, body: t.tutorialWelcomeBody },
     { Icon: House, title: t.tutorialHomeTitle, body: t.tutorialHomeBody },
     { Icon: PenLine, title: t.tutorialTodayTitle, body: t.tutorialTodayBody },
     { Icon: CalendarDays, title: t.tutorialJournalTitle, body: t.tutorialJournalBody },
     { Icon: Settings, title: t.tutorialSettingsTitle, body: t.tutorialSettingsBody },
+    ...(showTrialStep
+      ? [{ Icon: Heart, iconProps: { fill: C.pinkText }, title: t.tutorialTrialTitle, body: t.tutorialTrialBody, isTrial: true }]
+      : []),
   ];
   const step = steps[tutorialStep];
   const isLast = tutorialStep === steps.length - 1;
   const StepIcon = step.Icon;
+
+  // Two ways out of the trial step: take the trial (straight to the paywall so the
+  // pairing they just read about is one tap away), or start solo. Starting solo must
+  // never land on the paywall — and neither must a replay from Settings, which is why
+  // the step only exists on the first run at all.
+  const finishWithTrial = () => {
+    closeTutorial();
+    router.push("/paywall");
+  };
+  const finish = () => closeTutorial();
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={closeTutorial}>
@@ -38,24 +54,37 @@ export default function TutorialOverlay() {
             ))}
           </View>
 
-          <View style={styles.row}>
-            {tutorialStep > 0 && (
-              <Pressable style={styles.backBtn} onPress={() => setTutorialStep((s) => s - 1)}>
-                <Text style={styles.backLabel}>{t.tutorialBack}</Text>
+          {step.isTrial ? (
+            <View style={styles.trialActions}>
+              <Pressable style={styles.trialPrimaryBtn} onPress={finishWithTrial}>
+                <Text style={styles.nextLabel}>{t.tutorialTrialCta}</Text>
               </Pressable>
-            )}
-            <Pressable
-              style={styles.nextBtn}
-              onPress={() => (isLast ? closeTutorial() : setTutorialStep((s) => s + 1))}
-            >
-              <Text style={styles.nextLabel}>{isLast ? t.tutorialDone : t.tutorialNext}</Text>
-            </Pressable>
-          </View>
+              <Pressable style={styles.trialSoloBtn} onPress={finish}>
+                <Text style={styles.trialSoloLabel}>{t.tutorialTrialSolo}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <>
+              <View style={styles.row}>
+                {tutorialStep > 0 && (
+                  <Pressable style={styles.backBtn} onPress={() => setTutorialStep((s) => s - 1)}>
+                    <Text style={styles.backLabel}>{t.tutorialBack}</Text>
+                  </Pressable>
+                )}
+                <Pressable
+                  style={styles.nextBtn}
+                  onPress={() => (isLast ? finish() : setTutorialStep((s) => s + 1))}
+                >
+                  <Text style={styles.nextLabel}>{isLast ? t.tutorialDone : t.tutorialNext}</Text>
+                </Pressable>
+              </View>
 
-          {!isLast && (
-            <Pressable onPress={closeTutorial}>
-              <Text style={styles.skip}>{t.tutorialSkip}</Text>
-            </Pressable>
+              {!isLast && (
+                <Pressable onPress={closeTutorial}>
+                  <Text style={styles.skip}>{t.tutorialSkip}</Text>
+                </Pressable>
+              )}
+            </>
           )}
         </View>
       </View>
@@ -89,5 +118,9 @@ const styles = StyleSheet.create({
   backLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
   nextBtn: { flex: 1, borderRadius: 999, paddingVertical: 13, alignItems: "center", backgroundColor: C.pinkDeep },
   nextLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: "#fff" },
+  trialActions: { width: "100%", gap: 10 },
+  trialPrimaryBtn: { borderRadius: 999, paddingVertical: 14, alignItems: "center", backgroundColor: C.pinkDeep },
+  trialSoloBtn: { borderRadius: 999, paddingVertical: 13, alignItems: "center" },
+  trialSoloLabel: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: C.inkSoft },
   skip: { fontFamily: fonts.bodyBold, fontSize: 12.5, color: C.inkSoft },
 });

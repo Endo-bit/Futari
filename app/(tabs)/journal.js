@@ -169,7 +169,10 @@ export default function JournalScreen() {
                     const dIso = isoOf(new Date(calY, calM, day));
                     const isToday = dIso === todayIso;
                     const en = entries[dIso];
-                    const filled = !!(en && (en.happy || en.mind || en.next));
+                    // Same test the streak uses (appState's wroteToday) — leaving
+                    // promptAnswer out made a day where only the prompt was answered
+                    // look blank here while still counting toward the streak.
+                    const filled = !!(en && (en.happy || en.mind || en.next || en.promptAnswer));
                     const sds = sdForDate(dIso);
                     const isFuture = dIso > todayIso;
                     return (

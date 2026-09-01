@@ -3,13 +3,14 @@ import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, Redirect } from "expo-router";
 import { useAuth } from "@clerk/expo";
-import { ChevronLeft, Moon, Smile, Meh, Heart, Smile as SmileIcon, Clover } from "lucide-react-native";
+import { ChevronLeft, Moon, Smile, Meh, Heart, Smile as SmileIcon, Clover, Share2 } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import SdBanner from "../../components/SdBanner";
 import { PairFieldCards } from "../../components/FieldCard";
+import ShareSheet from "../../components/ShareSheet";
 import { C, fonts } from "../../lib/theme";
 import { useApp, fromIso } from "../../lib/appState";
-import { dayOfYear } from "../../lib/format";
+import { promptFor, quizFor } from "../../lib/dailyContent";
 
 function ReactionIcons({ ids }) {
   return (
@@ -41,16 +42,17 @@ export default function EntryDetail() {
   const { t, lang, getEntry, mode, me, partnerName, myName, describeQuizChoice, api } = useApp();
   const insets = useSafeAreaInsets();
 
-  if (!isLoaded) return <View style={{ flex: 1, backgroundColor: C.paper }} />;
-  if (!isSignedIn) return <Redirect href="/" />;
-
   const e = getEntry(date);
   const d = fromIso(date);
   const title = lang === "ja" ? `${d.getMonth() + 1}月${d.getDate()}日のページ` : `${t.pageOf} ${d.toLocaleDateString(lang)}`;
-  const quizQ = t.coupleQuestions[dayOfYear(d) % t.coupleQuestions.length];
-  const promptList = mode === "pair" ? t.prompts : t.promptsSolo;
-  const prompt = promptList[dayOfYear(d) % promptList.length];
+  // Prefer the text stored on the entry itself — it's whatever was actually shown
+  // the day this was written. Only fall back to recomputing for older entries saved
+  // before that was tracked (or days nothing was ever written).
+  const quizQ = quizFor(t, date, e);
+  const prompt = promptFor(t, mode, date, e);
+  const wroteSomething = !!(e.happy || e.mind || e.next || e.promptAnswer);
 
+  const [shareOpen, setShareOpen] = useState(false);
   const [pastPairData, setPastPairData] = useState(null);
   useEffect(() => {
     if (mode !== "pair" || !me?.pairSpaceId) {
@@ -68,6 +70,9 @@ export default function EntryDetail() {
 
   const MoodIcon = e.mood ? MOOD_ICONS[e.mood] : null;
 
+  if (!isLoaded) return <View style={{ flex: 1, backgroundColor: C.paper }} />;
+  if (!isSignedIn) return <Redirect href="/" />;
+
   return (
     <PaperBg>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
@@ -75,6 +80,11 @@ export default function EntryDetail() {
           <ChevronLeft size={22} color={C.inkSoft} />
         </Pressable>
         <Text style={styles.title}>{title}</Text>
+        {wroteSomething && (
+          <Pressable onPress={() => setShareOpen(true)} style={styles.shareBtn} accessibilityLabel={t.shareTitle}>
+            <Share2 size={17} color={C.pinkText} />
+          </Pressable>
+        )}
       </View>
 
       <ScrollView contentContainerStyle={[styles.body, { paddingBottom: 40 }]}>
@@ -123,12 +133,22 @@ export default function EntryDetail() {
           </View>
         )}
       </ScrollView>
+
+      <ShareSheet
+        visible={shareOpen}
+        onClose={() => setShareOpen(false)}
+        entry={e}
+        partner={pastPairData?.revealed ? pastPairData.partner : null}
+        dateText={title}
+        prompt={prompt}
+      />
     </PaperBg>
   );
 }
 
 const styles = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6 },
+  shareBtn: { marginLeft: "auto", width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: C.pink },
   title: { fontFamily: fonts.scriptSemiBold, fontSize: 28, lineHeight: 42, paddingVertical: 3, paddingRight: 8, color: C.ink },
   body: { paddingHorizontal: 18, paddingTop: 8, gap: 14 },
   promptCard: { backgroundColor: C.pink, borderRadius: 20, padding: 18 },

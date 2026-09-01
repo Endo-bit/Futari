@@ -38,7 +38,30 @@
           "icon": "./assets/notification-icon.png",
           "color": "#E6AEB9"
         }
-      ]
+      ],
+      [
+        "expo-widgets",
+        {
+          "bundleIdentifier": "com.futarimobile.app.FutariWidgets",
+          "groupIdentifier": "group.com.futarimobile.app",
+          "widgets": [
+            {
+              "name": "FutariWidget",
+              "displayName": "Futari",
+              "description": "Today's prompt, your couple question, or a countdown — you choose in the app.",
+              "supportedFamilies": [
+                "systemSmall",
+                "systemMedium",
+                "accessoryCircular",
+                "accessoryRectangular",
+                "accessoryInline"
+              ],
+              "contentMarginsDisabled": false
+            }
+          ]
+        }
+      ],
+      "expo-sharing"
     ],
     "extra": {
       "router": {},

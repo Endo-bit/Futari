@@ -9,11 +9,11 @@ import SaveButton from "../../components/SaveButton";
 import DateField from "../../components/DateField";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp, fromIso } from "../../lib/appState";
-import { dayOfYear } from "../../lib/format";
+import { promptFor, quizFor } from "../../lib/dailyContent";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { t, lang, today, todayIso, me, setMe, mode, api, streak, pairToday, setPairToday, refreshPairToday, partnerName, myName, describeQuizChoice, showToast } = useApp();
+  const { t, lang, today, todayIso, me, setMe, mode, api, streak, pairToday, setPairToday, refreshPairToday, partnerName, myName, describeQuizChoice, showToast, getEntry } = useApp();
   const [startDateFormOpen, setStartDateFormOpen] = useState(false);
   const [draftStartDate, setDraftStartDate] = useState(me?.startDate || null);
 
@@ -34,9 +34,9 @@ export default function HomeScreen() {
     if (me?.personalSpaceId) AsyncStorage.setItem(`futari_my_next_${me.personalSpaceId}`, text).catch(() => {});
   };
 
-  const promptList = mode === "pair" ? t.prompts : t.promptsSolo;
-  const prompt = promptList[dayOfYear(today) % promptList.length];
-  const quizQ = t.coupleQuestions[dayOfYear(today) % t.coupleQuestions.length];
+  const todayEntry = getEntry(todayIso);
+  const prompt = promptFor(t, mode, todayIso, todayEntry);
+  const quizQ = quizFor(t, todayIso, pairToday?.mine);
   const showCouple = mode === "pair" && !!me?.pairId;
   const daysTogether = me?.startDate ? Math.floor((today - fromIso(me.startDate)) / 86400000) : null;
 
@@ -60,10 +60,12 @@ export default function HomeScreen() {
       partnerReactions: [],
       partnerReply: null,
       ...prev,
-      mine: { ...(prev?.mine || {}), quizChoice: choice },
+      mine: { ...(prev?.mine || {}), quizChoice: choice, quizQuestion: quizQ },
     }));
     try {
-      await api.saveEntry(me.pairSpaceId, todayIso, { quizChoice: choice });
+      // Pin the question text next to the answer so reopening this day from the
+      // calendar always shows the question that was actually answered.
+      await api.saveEntry(me.pairSpaceId, todayIso, { quizChoice: choice, quizQuestion: quizQ });
     } finally {
       refreshPairToday();
     }
