@@ -1,0 +1,13 @@
+WIDGETS
+Votre page toujours à portée de main. Ajoutez Futari à votre écran d'accueil ou à votre écran verrouillé et choisissez ce qu'il affiche : ce que votre partenaire a envie de faire ensuite, la petite question du jour, votre quiz, vos jours ensemble ou un compte à rebours vers une date spéciale.
+
+PARTAGER UNE PAGE
+Transformez une journée en une image que l'on a envie de garder. Inclure la page de votre partenaire, c'est toujours vous qui décidez.
+
+DES MOTS PLUS DOUX, MAINTENANT PLUS FINS
+Quand ce que vous écrivez risque de blesser, Futari vous propose désormais trois façons plus douces de le dire, écrites à partir de vos propres mots.
+
+AUTRES CORRECTIONS
+- Les pages ouvertes depuis le calendrier affichent de nouveau la question et le quiz avec lesquels elles ont été écrites
+- Les prix s'affichent selon les usages de votre pays
+- Le clavier ne cache plus le bouton d'enregistrement, et enregistrer conserve exactement ce qui est à l'écran
