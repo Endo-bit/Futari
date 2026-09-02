@@ -13,14 +13,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # The runner's default Xcode can be too old for some native SPM
-      # dependencies (e.g. Clerk's iOS SDK requiring a newer Swift tools
-      # version than the default Xcode ships). Pin the newest available
-      # Xcode on the runner instead of relying on the default.
-      - name: Select latest available Xcode
+      # Pinned deliberately to an exact version — do not change to
+      # `latest-stable` without checking the note below.
+      #
+      # Too old fails: the runner's default (16.4) can't build Clerk's iOS SDK,
+      # which needs a newer Swift tools version.
+      #
+      # Too new fails: Xcode 26.3 rejects expo-modules-jsi with
+      #   'RuntimeScheduler' cannot be annotated with either
+      #   SWIFT_RETURNS_RETAINED or SWIFT_RETURNS_UNRETAINED because it is not
+      #   returning a SWIFT_SHARED_REFERENCE type
+      # RuntimeScheduler.h does carry SWIFT_SHARED_REFERENCE, but on the class's
+      # closing brace — after the constructors that use SWIFT_RETURNS_RETAINED.
+      # 26.3's Swift interop resolves the attribute at the declaration, before
+      # it has seen that, and errors. It is an upstream Expo issue with no
+      # newer release to move to (expo 57.0.18 / expo-modules-jsi 57.0.6 are
+      # the latest published). Revisit once Expo ships a fix.
+      #
+      # 26.2 is present on the macos-15 image and satisfies both ends.
+      - name: Select Xcode 26.2
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable
+          xcode-version: '26.2'
 
       - name: Setup Node
         uses: actions/setup-node@v4
