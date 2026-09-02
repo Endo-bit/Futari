@@ -76,6 +76,34 @@ jobs:
           EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY }}
           EXPO_PUBLIC_REVENUECAT_IOS_API_KEY: ${{ secrets.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY }}
 
+      # App Store Connect rejects an upload whose app extension carries a
+      # different CFBundleVersion from the app. Xcode only warns about it, the
+      # archive still succeeds, and with --no-wait on the submit step the run
+      # goes green — so the first time this happened the build simply never
+      # reached TestFlight and nothing said why. Catch it here instead.
+      - name: Check extension versions match the app
+        run: |
+          cd build
+          rm -rf _check && mkdir _check && cd _check
+          unzip -q ../Futari.ipa
+          app=$(ls -d Payload/*.app)
+          app_v=$(plutil -extract CFBundleVersion raw "$app/Info.plist")
+          app_s=$(plutil -extract CFBundleShortVersionString raw "$app/Info.plist")
+          echo "app: $app_s ($app_v)"
+          status=0
+          for ext in "$app"/PlugIns/*.appex; do
+            [ -e "$ext" ] || continue
+            ext_v=$(plutil -extract CFBundleVersion raw "$ext/Info.plist")
+            ext_s=$(plutil -extract CFBundleShortVersionString raw "$ext/Info.plist")
+            echo "  $(basename "$ext"): $ext_s ($ext_v)"
+            if [ "$ext_v" != "$app_v" ] || [ "$ext_s" != "$app_s" ]; then
+              echo "::error::$(basename "$ext") is $ext_s ($ext_v) but the app is $app_s ($app_v). App Store Connect will reject this upload."
+              status=1
+            fi
+          done
+          cd .. && rm -rf _check
+          exit $status
+
       - name: Upload ipa artifact
         uses: actions/upload-artifact@v4
         with:
