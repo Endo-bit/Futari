@@ -8,6 +8,7 @@ import { C, fonts } from "../../lib/theme";
 import { useApp } from "../../lib/appState";
 import ToastView from "../../components/Toast";
 import TutorialOverlay from "../../components/TutorialOverlay";
+import TrialNotice from "../../components/TrialNotice";
 
 export default function TabsLayout() {
   const { t } = useApp();
@@ -55,6 +56,7 @@ export default function TabsLayout() {
 
       <ToastView />
       <TutorialOverlay />
+      <TrialNotice />
     </SafeAreaView>
   );
 }

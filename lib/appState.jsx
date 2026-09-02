@@ -27,7 +27,7 @@ export function AppStateProvider({ children }) {
   const api = useApi();
   const { isSignedIn } = useAuth();
   const { user } = useUser();
-  const { isPremium, isLoading: entitlementLoading, isAvailable: entitlementAvailable } = useEntitlement();
+  const { isPremium } = useEntitlement();
 
   const [lang, setLangState] = useState("en");
   useEffect(() => {
@@ -210,20 +210,28 @@ export function AppStateProvider({ children }) {
     setTutorialOpen(true);
   }, []);
 
-  // Pairing is a premium feature — if entitlement lapses (trial/subscription ended,
-  // refunded, etc.) while still paired, drop the pairing automatically instead of
-  // silently leaving premium-gated access in place. Only act once RevenueCat has
-  // actually reported a real (non-loading) status — on builds where purchases aren't
-  // available at all (Expo Go, web preview) isPremium is always false, and that must
-  // never be read as "the subscription ended".
-  useEffect(() => {
-    if (!entitlementAvailable || entitlementLoading || isPremium || !me?.pairId) return;
-    api
-      .unpair()
-      .then(() => refreshMe())
-      .then(() => showToast(t.autoUnpairedToast, "info"))
-      .catch(() => {});
-  }, [isPremium, entitlementLoading, entitlementAvailable, me?.pairId]); // eslint-disable-line
+  /* Entitlement = a live subscription OR an unexpired free trial. The trial half
+     is server state (users/<uid>.trialStartedAt), so it survives signing out,
+     reinstalling and switching devices in a way RevenueCat's local cache does not. */
+  const trialActive = !!me?.trialActive;
+  const trialAvailable = !!me?.trialAvailable;
+  const trialDaysLeft = me?.trialDaysLeft ?? 0;
+  const trialDayIndex = me?.trialDayIndex ?? 0;
+  const trialEndsAt = me?.trialEndsAt ?? null;
+  // me.premiumActive is what RevenueCat's webhook last told the server. Trust
+  // either source: the device may know about a purchase before the webhook lands,
+  // and the server still knows after a sign-out clears the local cache.
+  const entitled = isPremium || !!me?.premiumActive || trialActive;
+  // Pairing is reachable while entitled, and also before a first-ever trial —
+  // that is what lets a new couple pair without entering payment details.
+  const canPair = entitled || trialAvailable;
+
+  /* Releasing a lapsed pairing is the SERVER's job (the RevenueCat webhook, plus
+     the daily cron that also enforces trial expiry). It used to be done here, and
+     that was wrong: signing out clears the local RevenueCat cache, so isPremium
+     briefly reads false while `me` still holds a pairing — and the app would
+     unpair a perfectly valid subscriber on their way out. The client now only
+     reflects what the server decided. */
 
   const value = {
     api,
@@ -235,6 +243,8 @@ export function AppStateProvider({ children }) {
     pairToday, setPairToday, refreshPairToday,
     specialDays, setSpecialDays,
     wroteToday, streak,
+    isPremium, entitled, canPair,
+    trialActive, trialAvailable, trialDaysLeft, trialDayIndex, trialEndsAt,
     widgetMode, chooseWidgetMode, widgetSpecialDayId, chooseWidgetSpecialDay,
     toast, showToast,
     tutorialOpen, tutorialStep, setTutorialStep, tutorialIsFirstRun, openTutorial, closeTutorial,

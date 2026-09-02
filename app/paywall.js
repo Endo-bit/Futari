@@ -32,7 +32,7 @@ function FeatureRow({ icon, label }) {
 export default function Paywall() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { t, lang, showToast } = useApp();
+  const { t, lang, showToast, trialActive, trialDaysLeft } = useApp();
   const { isAvailable, refresh } = useEntitlement();
   const insets = useSafeAreaInsets();
   const Purchases = loadPurchases();
@@ -139,7 +139,9 @@ export default function Paywall() {
           <Heart size={30} color={C.pinkText} fill={C.pinkText} />
         </View>
         <Text style={styles.title}>{t.paywallTitle}</Text>
-        <Text style={styles.sub}>{t.paywallSub}</Text>
+        <Text style={styles.sub}>
+          {trialActive ? t.trialPaywallSub.replace("{n}", String(trialDaysLeft)) : t.paywallSub}
+        </Text>
 
         <View style={styles.features}>
           <FeatureRow icon={<Heart size={16} color={C.pinkText} />} label={t.paywallFeaturePairing} />
@@ -196,7 +198,7 @@ export default function Paywall() {
         )}
 
         <Pressable onPress={() => router.back()} style={{ marginTop: 18 }}>
-          <Text style={styles.notNow}>{t.paywallClose}</Text>
+          <Text style={styles.notNow}>{trialActive ? t.trialNoticeKeepFree : t.paywallClose}</Text>
         </Pressable>
 
         <View style={styles.legalRow}>

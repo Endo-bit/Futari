@@ -57,6 +57,10 @@ export function EntitlementProvider({ children }) {
     }
 
     let cancelled = false;
+    // This effect re-runs whenever the signed-in user changes, and until it has
+    // finished talking to RevenueCat for the NEW user, isPremium still describes
+    // the old one. Say so, so nothing reads a stale false as "not subscribed".
+    setIsLoading(true);
     (async () => {
       const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY;
       if (!apiKey) {
@@ -65,7 +69,14 @@ export function EntitlementProvider({ children }) {
       }
       try {
         Purchases.configure({ apiKey });
-        if (userId) await Purchases.logIn(userId);
+        if (userId) {
+          await Purchases.logIn(userId);
+        } else {
+          // Signed out: drop back to an anonymous RevenueCat user so the next
+          // sign-in starts clean. The purchase itself belongs to the Apple ID,
+          // not to this app user, so logging in again restores it.
+          await Purchases.logOut().catch(() => {});
+        }
         const info = await Purchases.getCustomerInfo();
         if (!cancelled) applyCustomerInfo(info);
       } catch {

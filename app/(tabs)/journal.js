@@ -9,14 +9,12 @@ import DateField from "../../components/DateField";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp, isoOf } from "../../lib/appState";
 import { sdTitle, sdLabel, sdCountdown } from "../../components/SdBanner";
-import { useEntitlement } from "../../lib/entitlement";
 
 const SD_ICONS = { heart: Heart, cake: Cake, star: Star };
 
 export default function JournalScreen() {
   const router = useRouter();
-  const { t, lang, today, todayIso, me, mode, api, entries, specialDays, setSpecialDays, streak, showToast, spaceId } = useApp();
-  const { isPremium } = useEntitlement();
+  const { t, lang, today, todayIso, me, mode, api, entries, specialDays, setSpecialDays, streak, showToast, spaceId, entitled } = useApp();
 
   const [calY, setCalY] = useState(today.getFullYear());
   const [calM, setCalM] = useState(today.getMonth());
@@ -43,7 +41,7 @@ export default function JournalScreen() {
   const sdForDate = (dIso) => specialDays.filter((sd) => sd.date.slice(5) === dIso.slice(5));
 
   const openAddForm = () => {
-    if (!isPremium && specialDays.length >= 1) {
+    if (!entitled && specialDays.length >= 1) {
       router.push("/paywall");
       return;
     }
@@ -196,7 +194,7 @@ export default function JournalScreen() {
                 <View style={styles.sdHeader}>
                   <Text style={styles.sdTitle}>{t.specialDays}</Text>
                   <Pressable onPress={openAddForm} style={styles.sdAddBtn}>
-                    {!isPremium && specialDays.length >= 1 ? (
+                    {!entitled && specialDays.length >= 1 ? (
                       <Lock size={14} color={C.pinkText} />
                     ) : (
                       <Plus size={16} color={C.pinkText} style={{ transform: [{ rotate: sdFormOpen ? "45deg" : "0deg" }] }} />
@@ -204,7 +202,7 @@ export default function JournalScreen() {
                   </Pressable>
                 </View>
 
-                {!isPremium && (
+                {!entitled && (
                   <Text style={styles.sdLimitNote}>{t.specialDaysLimitNote}</Text>
                 )}
 

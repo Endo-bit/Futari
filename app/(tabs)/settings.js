@@ -8,13 +8,12 @@ import {
   Heart, Globe, Bell, Download, Trash2, Link2Off, Check, Lock, HelpCircle, Sparkles, ChevronRight, CreditCard, Send,
   LayoutGrid,
 } from "lucide-react-native";
-import { shareInvite } from "../../lib/shareInvite";
+import InviteSheet from "../../components/InviteSheet";
 import PaperBg from "../../components/PaperBg";
 import Pill from "../../components/Pill";
 import TimeField from "../../components/TimeField";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp } from "../../lib/appState";
-import { useEntitlement } from "../../lib/entitlement";
 import { LANGS, T } from "../../lib/i18n";
 import { buildExportText } from "../../lib/exportText";
 import { WIDGET_MODES } from "../../lib/widgets";
@@ -45,8 +44,8 @@ export default function SettingsScreen() {
   const {
     t, lang, setLang, me, setMe, refreshMe, partnerName, api, showToast, openTutorial, todayIso,
     specialDays, widgetMode, chooseWidgetMode, widgetSpecialDayId, chooseWidgetSpecialDay,
+    isPremium, entitled, canPair, trialActive, trialDaysLeft,
   } = useApp();
-  const { isPremium } = useEntitlement();
 
   const [reminderOn, setReminderOn] = useState(false);
   const [revealNotifOn, setRevealNotifOn] = useState(true);
@@ -137,6 +136,7 @@ export default function SettingsScreen() {
     api.saveNotificationPrefs({ reminderOn, revealNotifOn, reminderTime: time }).catch(() => {});
   };
 
+  const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState(null);
   const [redeemInput, setRedeemInput] = useState("");
   const [pairingBusy, setPairingBusy] = useState(false);
@@ -153,16 +153,21 @@ export default function SettingsScreen() {
     return () => clearInterval(timer);
   }, [inviteCode, me?.pairId]); // eslint-disable-line
 
-  const requirePremium = () => {
-    if (!isPremium) {
-      router.push("/paywall");
-      return false;
-    }
-    return true;
+  /** Pairing is reachable while entitled and also on a never-used free trial. */
+  const requirePairing = () => {
+    if (canPair) return true;
+    router.push("/paywall");
+    return false;
+  };
+  /** Export is a paid/trial feature, but a fresh trial does not unlock it early. */
+  const requireEntitlement = () => {
+    if (entitled) return true;
+    router.push("/paywall");
+    return false;
   };
 
   const handleCreateInvite = async () => {
-    if (!requirePremium()) return;
+    if (!requirePairing()) return;
     setPairingBusy(true);
     try {
       const { code } = await api.createInvite();
@@ -174,7 +179,7 @@ export default function SettingsScreen() {
     }
   };
   const handleRedeem = async () => {
-    if (!requirePremium()) return;
+    if (!requirePairing()) return;
     if (!redeemInput.trim()) return;
     setPairingBusy(true);
     try {
@@ -209,7 +214,7 @@ export default function SettingsScreen() {
   };
 
   const handleExport = async () => {
-    if (!requirePremium()) return;
+    if (!requireEntitlement()) return;
     if (!me) return;
     try {
       const data = await api.exportMyData(me.personalSpaceId, me.pairSpaceId);
@@ -282,10 +287,21 @@ export default function SettingsScreen() {
                 </View>
                 <Text style={styles.notPaired}>{t.notPaired}</Text>
 
-                {!isPremium && (
+                {canPair ? (
+                  <View style={styles.premiumNote}>
+                    <Sparkles size={13} color={C.pinkText} />
+                    <Text style={styles.premiumNoteText}>
+                      {trialActive
+                        ? t.trialDaysLeftNote.replace("{n}", String(trialDaysLeft))
+                        : entitled
+                        ? t.paywallFeaturePairing
+                        : t.trialFreeNote.replace("{n}", String(t.trialDays))}
+                    </Text>
+                  </View>
+                ) : (
                   <View style={styles.premiumNote}>
                     <Lock size={13} color={C.pinkText} />
-                    <Text style={styles.premiumNoteText}>{t.paywallFeaturePairing}</Text>
+                    <Text style={styles.premiumNoteText}>{t.trialEndedNote}</Text>
                   </View>
                 )}
 
@@ -334,8 +350,12 @@ export default function SettingsScreen() {
                 <Sparkles size={18} color="#fff" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.premiumCardTitle}>{t.paywallTitle}</Text>
-                <Text style={styles.premiumCardSub}>{t.upgradeToPremium}</Text>
+                <Text style={styles.premiumCardTitle}>
+                  {trialActive ? t.trialCardTitle.replace("{n}", String(trialDaysLeft)) : t.paywallTitle}
+                </Text>
+                <Text style={styles.premiumCardSub}>
+                  {trialActive ? t.trialCardSub : t.upgradeToPremium}
+                </Text>
               </View>
               <ChevronRight size={18} color="#fff" />
             </Pressable>
@@ -410,7 +430,7 @@ export default function SettingsScreen() {
           )}
 
           <View style={[styles.card, { paddingVertical: 4, paddingHorizontal: 18 }]}>
-            <Row icon={<Send size={17} color={C.inkSoft} />} label={t.inviteFriend} onPress={() => shareInvite(t)} />
+            <Row icon={<Send size={17} color={C.inkSoft} />} label={t.inviteFriend} onPress={() => setInviteSheetOpen(true)} />
             <Row icon={<HelpCircle size={17} color={C.inkSoft} />} label={t.tutorialReplay} onPress={openTutorial} />
             <Row icon={<Bell size={17} color={C.inkSoft} />} label={t.reminder} right={<Pill on={reminderOn} />} onPress={toggleReminder} />
             {reminderOn && (
@@ -422,7 +442,7 @@ export default function SettingsScreen() {
             )}
             <Row icon={<Heart size={17} color={C.inkSoft} />} label={t.revealNotif} right={<Pill on={revealNotifOn} />} onPress={toggleRevealNotif} />
             <Row
-              icon={isPremium ? <Download size={17} color={C.inkSoft} /> : <Lock size={17} color={C.inkSoft} />}
+              icon={entitled ? <Download size={17} color={C.inkSoft} /> : <Lock size={17} color={C.inkSoft} />}
               label={t.exportData}
               onPress={handleExport}
             />
@@ -438,6 +458,8 @@ export default function SettingsScreen() {
           <Text style={styles.privacyNote}>{t.privacyNote}</Text>
         </View>
       </ScrollView>
+
+      <InviteSheet visible={inviteSheetOpen} onClose={() => setInviteSheetOpen(false)} code={inviteCode} />
     </PaperBg>
   );
 }
