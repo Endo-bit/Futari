@@ -82,11 +82,19 @@ jobs:
           name: futari-ios-ipa
           path: build/Futari.ipa
 
+      # --no-wait: once the archive is handed to EAS Submit the rest happens on
+      # Expo's servers, so blocking the runner on it buys nothing. Without it the
+      # step polls until the job's 90-minute limit and the run is recorded as a
+      # failure even when the submission went through — that is exactly what
+      # happened on the first green build: TestFlight received 1.0.3 (build 40)
+      # 24 minutes after GitHub had already cancelled the job.
+      # Track a submission at the URL this step prints, or in App Store Connect.
       - name: Submit to App Store Connect (TestFlight)
         run: |
           eas submit \
             --platform ios \
             --path ./build/Futari.ipa \
-            --non-interactive
+            --non-interactive \
+            --no-wait
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
