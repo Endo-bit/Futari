@@ -7,34 +7,40 @@ on:
 
 jobs:
   build-and-submit:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 90
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Pinned deliberately to an exact version — do not change to
-      # `latest-stable` without checking the note below.
+      # Expo SDK 57 requires Xcode 26.4 or newer — anything older fails to build
+      # expo-modules-jsi:
+      #   'RuntimeScheduler' cannot be annotated with either SWIFT_RETURNS_RETAINED
+      #   or SWIFT_RETURNS_UNRETAINED because it is not returning a
+      #   SWIFT_SHARED_REFERENCE type
+      # Its two constructors carry SWIFT_RETURNS_RETAINED, which Swift rejects on a
+      # constructor. Swift 6.2.x (Xcode ≤ 26.3) makes that an error; 6.3.x (26.4+)
+      # downgrades it to a warning and the build succeeds. Upstream:
+      # expo/expo#49214 and #49426 — both closed with "upgrade to Xcode 26.4+".
+      # Moving the annotation in the header does NOT help; Expo measured that.
       #
-      # Too old fails: the runner's default (16.4) can't build Clerk's iOS SDK,
-      # which needs a newer Swift tools version.
-      #
-      # Too new fails: Xcode 26.3 rejects expo-modules-jsi with
-      #   'RuntimeScheduler' cannot be annotated with either
-      #   SWIFT_RETURNS_RETAINED or SWIFT_RETURNS_UNRETAINED because it is not
-      #   returning a SWIFT_SHARED_REFERENCE type
-      # RuntimeScheduler.h does carry SWIFT_SHARED_REFERENCE, but on the class's
-      # closing brace — after the constructors that use SWIFT_RETURNS_RETAINED.
-      # 26.3's Swift interop resolves the attribute at the declaration, before
-      # it has seen that, and errors. It is an upstream Expo issue with no
-      # newer release to move to (expo 57.0.18 / expo-modules-jsi 57.0.6 are
-      # the latest published). Revisit once Expo ships a fix.
-      #
-      # 26.2 is present on the macos-15 image and satisfies both ends.
-      - name: Select Xcode 26.2
+      # macos-15 only ships up to Xcode 26.3, which is why this job runs on
+      # macos-26. Pinned to 26.4.1 — the documented floor — rather than the image
+      # default (26.6), since this failure was itself caused by a newer toolchain
+      # tightening a rule.
+      - name: Select Xcode 26.4.1
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '26.2'
+          xcode-version: '26.4.1'
+
+      # Record which toolchain actually built this. The Swift version is the thing
+      # that decides the error above, and a build log otherwise gives no way to
+      # tell what produced a failure.
+      - name: Report the toolchain
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          swift --version
 
       - name: Setup Node
         uses: actions/setup-node@v4
