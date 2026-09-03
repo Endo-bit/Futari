@@ -10,9 +10,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.futarimobile.app",
-      "buildNumber": "43",
+      "buildNumber": "44",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleLocalizations": ["en", "es", "fr", "de", "it", "ja"]
       }
     },
     "android": {
