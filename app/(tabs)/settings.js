@@ -16,7 +16,7 @@ import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp } from "../../lib/appState";
 import { LANGS, T } from "../../lib/i18n";
 import { buildExportText } from "../../lib/exportText";
-import { WIDGET_MODES } from "../../lib/widgets";
+import { WIDGET_MODES, subscribeWidgetStatus } from "../../lib/widgets";
 import { sdTitle } from "../../components/SdBanner";
 import {
   registerForPushNotifications,
@@ -135,6 +135,11 @@ export default function SettingsScreen() {
     }
     api.saveNotificationPrefs({ reminderOn, revealNotifOn, reminderTime: time }).catch(() => {});
   };
+
+  // Surfaced under the widget picker: a blank widget otherwise gives no way to
+  // tell whether the app wrote anything for it.
+  const [widgetStatus, setWidgetStatus] = useState(null);
+  useEffect(() => subscribeWidgetStatus(setWidgetStatus), []);
 
   const [inviteSheetOpen, setInviteSheetOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState(null);
@@ -386,6 +391,11 @@ export default function SettingsScreen() {
                 <Text style={styles.cardHeading}>{t.widgetTitle}</Text>
               </View>
               <Text style={styles.widgetHint}>{t.widgetHowTo}</Text>
+              {!!widgetStatus && widgetStatus.state !== "ok" && (
+                <Text style={styles.widgetDiag} selectable>
+                  {`⚠ ${widgetStatus.state}: ${widgetStatus.detail || "-"}`}
+                </Text>
+              )}
 
               <View style={styles.widgetOptions}>
                 {WIDGET_MODES.map((m) => {
@@ -494,6 +504,7 @@ const styles = StyleSheet.create({
   redeemBtnOff: { backgroundColor: "#E9DFD2" },
   cardHeading: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
   widgetHint: { fontFamily: fonts.bodyRegular, fontSize: 12, color: C.inkSoft, lineHeight: 18, marginBottom: 10 },
+  widgetDiag: { fontFamily: fonts.bodyRegular, fontSize: 11, color: "#C0605C", lineHeight: 16, marginBottom: 10 },
   widgetOptions: { gap: 7 },
   widgetOption: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 13, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff" },
   widgetOptionSel: { borderColor: C.pinkDeep, backgroundColor: C.pink },

@@ -1,9 +1,8 @@
-import { Text, VStack, HStack, Spacer } from "@expo/ui/swift-ui";
+import { Text, VStack, HStack } from "@expo/ui/swift-ui";
 import {
   containerBackground,
   font,
   foregroundColor,
-  frame,
   lineLimit,
   minimumScaleFactor,
   multilineTextAlignment,
@@ -81,11 +80,7 @@ function FutariWidget(props, environment) {
     <VStack
       alignment="leading"
       spacing={isSmall ? 5 : 7}
-      modifiers={[
-        frame({ maxWidth: 10000, maxHeight: 10000, alignment: "topLeading" }),
-        containerBackground(paper, "widget"),
-        widgetURL("futari://"),
-      ]}
+      modifiers={[containerBackground(paper, "widget"), widgetURL("futari://")]}
     >
       <Text
         modifiers={[
@@ -133,8 +128,6 @@ function FutariWidget(props, environment) {
           {body}
         </Text>
       )}
-
-      <Spacer />
     </VStack>
   );
 }
