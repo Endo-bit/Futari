@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useAuth, useUser } from "@clerk/expo";
 import { T, LANGS, detectLang } from "./i18n";
@@ -45,7 +46,25 @@ export function AppStateProvider({ children }) {
     [api]
   );
 
-  const today = useMemo(() => new Date(), []);
+  /* Not a one-time useMemo: the app is often left open (foregrounded, tab not
+     closed) across midnight, and a stale `today` silently kept yesterday's page
+     as "today's page". Re-check on foreground for an instant correction after
+     backgrounding, and poll while foregrounded to catch the rollover even if the
+     app is never backgrounded at all. */
+  const [today, setToday] = useState(() => new Date());
+  useEffect(() => {
+    const refreshIfDayChanged = () => {
+      setToday((prev) => (isoOf(prev) === isoOf(new Date()) ? prev : new Date()));
+    };
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active") refreshIfDayChanged();
+    });
+    const interval = setInterval(refreshIfDayChanged, 60000);
+    return () => {
+      sub.remove();
+      clearInterval(interval);
+    };
+  }, []);
   const todayIso = isoOf(today);
 
   const [me, setMe] = useState(null);
