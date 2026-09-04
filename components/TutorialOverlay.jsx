@@ -10,14 +10,21 @@ export default function TutorialOverlay() {
   if (!tutorialOpen) return null;
 
   const showTrialStep = tutorialIsFirstRun && !me?.pairId;
+  const settingsBody = me?.pairId ? t.tutorialSettingsBody : t.tutorialSettingsBodyUnpaired;
   const steps = [
     { Icon: Heart, iconProps: { fill: C.pinkText }, title: t.tutorialWelcomeTitle, body: t.tutorialWelcomeBody },
     { Icon: House, title: t.tutorialHomeTitle, body: t.tutorialHomeBody },
     { Icon: PenLine, title: t.tutorialTodayTitle, body: t.tutorialTodayBody },
     { Icon: CalendarDays, title: t.tutorialJournalTitle, body: t.tutorialJournalBody },
-    { Icon: Settings, title: t.tutorialSettingsTitle, body: t.tutorialSettingsBody },
+    { Icon: Settings, title: t.tutorialSettingsTitle, body: settingsBody },
     ...(showTrialStep
-      ? [{ Icon: Heart, iconProps: { fill: C.pinkText }, title: t.tutorialTrialTitle, body: t.tutorialTrialBody, isTrial: true }]
+      ? [{
+          Icon: Heart,
+          iconProps: { fill: C.pinkText },
+          title: t.tutorialTrialTitle,
+          body: t.tutorialTrialBody.replace("{n}", String(t.trialDays)),
+          isTrial: true,
+        }]
       : []),
   ];
   const step = steps[tutorialStep];
@@ -57,7 +64,7 @@ export default function TutorialOverlay() {
           {step.isTrial ? (
             <View style={styles.trialActions}>
               <Pressable style={styles.trialPrimaryBtn} onPress={finishWithTrial}>
-                <Text style={styles.nextLabel}>{t.tutorialTrialCta}</Text>
+                <Text style={styles.nextLabel}>{t.tutorialTrialCta.replace("{n}", String(t.trialDays))}</Text>
               </Pressable>
               <Pressable style={styles.trialSoloBtn} onPress={finish}>
                 <Text style={styles.trialSoloLabel}>{t.tutorialTrialSolo}</Text>
