@@ -9,12 +9,17 @@ import DateField from "../../components/DateField";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp, isoOf } from "../../lib/appState";
 import { sdTitle, sdLabel, sdCountdown } from "../../components/SdBanner";
+import TutorialTarget, { useTutorialScrollProps } from "../../components/TutorialTarget";
+import { track } from "../../lib/analytics";
+import { EV } from "../../lib/events";
 
 const SD_ICONS = { heart: Heart, cake: Cake, star: Star };
 
 export default function JournalScreen() {
   const router = useRouter();
   const { t, lang, today, todayIso, me, mode, api, entries, specialDays, setSpecialDays, streak, showToast, spaceId, entitled } = useApp();
+
+  const scrollProps = useTutorialScrollProps();
 
   const [calY, setCalY] = useState(today.getFullYear());
   const [calM, setCalM] = useState(today.getMonth());
@@ -43,6 +48,7 @@ export default function JournalScreen() {
   const openAddForm = () => {
     if (!entitled && specialDays.length >= 1) {
       router.push("/paywall");
+      track(EV.PAYWALL_VIEWED, { source: "special_days_limit" });
       return;
     }
     setSdFormOpen((o) => !o);
@@ -57,6 +63,7 @@ export default function JournalScreen() {
       setSdNewDate(null);
       setSdFormOpen(false);
       showToast(t.addedToast, "heart");
+      track(EV.SPECIAL_DAY_ADDED, { icon: sdNewIcon, total: specialDays.length + 1 });
     } catch (err) {
       showToast(err.message, "info");
     }
@@ -88,7 +95,7 @@ export default function JournalScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.journalTitle}</Text>
           <View style={styles.streakPill}>
@@ -110,7 +117,7 @@ export default function JournalScreen() {
         ) : (
           <>
             <View style={[styles.section, { marginTop: 10 }]}>
-              <View style={styles.calCard}>
+              <TutorialTarget id="journal.calendar" style={styles.calCard}>
                 <View style={styles.calNav}>
                   <Pressable onPress={() => stepMonth(-1)}>
                     <ChevronLeft size={19} color={C.inkSoft} />
@@ -186,7 +193,7 @@ export default function JournalScreen() {
                     );
                   })}
                 </View>
-              </View>
+              </TutorialTarget>
             </View>
 
             <View style={[styles.section, { marginTop: 6 }]}>

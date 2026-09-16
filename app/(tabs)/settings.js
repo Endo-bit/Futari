@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, Alert, Share, StyleSheet, Linking, Platform } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@clerk/expo";
 import * as Clipboard from "expo-clipboard";
 import {
@@ -18,15 +17,17 @@ import { LANGS, T } from "../../lib/i18n";
 import { buildExportText } from "../../lib/exportText";
 import { WIDGET_MODES, subscribeWidgetStatus } from "../../lib/widgets";
 import { sdTitle } from "../../components/SdBanner";
+import { registerForPushNotifications } from "../../lib/pushNotifications";
 import {
-  registerForPushNotifications,
-  ensureNotificationPermission,
-  scheduleDailyReminder,
-  cancelDailyReminder,
-} from "../../lib/pushNotifications";
-
-const REMINDER_ON_KEY = "futari_reminder_on";
-const REMINDER_TIME_KEY = "futari_reminder_time";
+  DEFAULT_REMINDER_TIME,
+  changeReminderTime,
+  disableReminder,
+  enableReminder,
+  readLocalPrefs,
+} from "../../lib/reminder";
+import { pairingLink } from "../../lib/deepLinks";
+import { track } from "../../lib/analytics";
+import { EV } from "../../lib/events";
 
 function Row({ icon, label, right, onPress, danger, last }) {
   return (
@@ -47,36 +48,24 @@ export default function SettingsScreen() {
     isPremium, entitled, canPair, trialActive, trialDaysLeft,
   } = useApp();
 
+  const { invite: inviteParam } = useLocalSearchParams();
+
   const [reminderOn, setReminderOn] = useState(false);
   const [revealNotifOn, setRevealNotifOn] = useState(true);
-  const [reminderTime, setReminderTime] = useState("21:00");
+  const [reminderTime, setReminderTime] = useState(DEFAULT_REMINDER_TIME);
   const [pushSubscribed, setPushSubscribed] = useState(false);
 
-  const reminderContent = (tt) => ({ title: tt.reminderNotifTitle, body: tt.reminderNotifBody });
-
+  /* The scheduling itself lives in lib/reminder — this screen and the tutorial
+     both turn the reminder on, and they used to do it slightly differently. */
   useEffect(() => {
     (async () => {
-      const [storedOn, storedTime] = await Promise.all([
-        AsyncStorage.getItem(REMINDER_ON_KEY),
-        AsyncStorage.getItem(REMINDER_TIME_KEY),
-      ]);
+      const local = await readLocalPrefs();
       const p = await api.getNotificationPrefs().catch(() => ({}));
       const wantsRevealNotif = p.revealNotifOn ?? true;
       setRevealNotifOn(wantsRevealNotif);
       setPushSubscribed(!!p.hasSubscription);
-
-      const on = storedOn != null ? storedOn === "1" : !!p.reminderOn;
-      const time = storedTime || p.reminderTime || "21:00";
-      setReminderOn(on);
-      setReminderTime(time);
-
-      if (on) {
-        const granted = await ensureNotificationPermission();
-        if (granted) {
-          const [h, m] = time.split(":").map(Number);
-          scheduleDailyReminder(h, m, reminderContent(t)).catch(() => {});
-        }
-      }
+      setReminderOn(local.onKnown ? local.on : !!p.reminderOn);
+      setReminderTime(local.time || p.reminderTime || DEFAULT_REMINDER_TIME);
 
       // Reveal-time notifications default to on server-side, but we only ever get an
       // Expo push token onto the server once the user grants permission — do that
@@ -104,21 +93,18 @@ export default function SettingsScreen() {
     return true;
   };
   const toggleReminder = async () => {
-    const next = !reminderOn;
-    if (next) {
-      const granted = await ensureNotificationPermission();
-      if (!granted) {
-        showToast(t.pushDenied, "info");
-        return;
-      }
-      const [h, m] = reminderTime.split(":").map(Number);
-      await scheduleDailyReminder(h, m, reminderContent(t));
-    } else {
-      await cancelDailyReminder();
+    if (reminderOn) {
+      await disableReminder({ api, time: reminderTime, revealNotifOn });
+      setReminderOn(false);
+      return;
     }
-    setReminderOn(next);
-    await AsyncStorage.setItem(REMINDER_ON_KEY, next ? "1" : "0");
-    api.saveNotificationPrefs({ reminderOn: next, revealNotifOn, reminderTime }).catch(() => {});
+    const ok = await enableReminder({ api, t, time: reminderTime, revealNotifOn, source: "settings" });
+    if (!ok) {
+      showToast(t.pushDenied, "info");
+      return;
+    }
+    setReminderOn(true);
+    setPushSubscribed(true);
   };
   const toggleRevealNotif = async () => {
     const next = !revealNotifOn;
@@ -126,14 +112,9 @@ export default function SettingsScreen() {
     setRevealNotifOn(next);
     await api.saveNotificationPrefs({ reminderOn, revealNotifOn: next, reminderTime });
   };
-  const changeReminderTime = async (time) => {
+  const handleReminderTimeChange = async (time) => {
     setReminderTime(time);
-    await AsyncStorage.setItem(REMINDER_TIME_KEY, time);
-    if (reminderOn) {
-      const [h, m] = time.split(":").map(Number);
-      await scheduleDailyReminder(h, m, reminderContent(t));
-    }
-    api.saveNotificationPrefs({ reminderOn, revealNotifOn, reminderTime: time }).catch(() => {});
+    await changeReminderTime({ api, t, time, on: reminderOn, revealNotifOn });
   };
 
   // Surfaced under the widget picker: a blank widget otherwise gives no way to
@@ -162,12 +143,14 @@ export default function SettingsScreen() {
   const requirePairing = () => {
     if (canPair) return true;
     router.push("/paywall");
+    track(EV.PAYWALL_VIEWED, { source: "pairing" });
     return false;
   };
   /** Export is a paid/trial feature, but a fresh trial does not unlock it early. */
   const requireEntitlement = () => {
     if (entitled) return true;
     router.push("/paywall");
+    track(EV.PAYWALL_VIEWED, { source: "export" });
     return false;
   };
 
@@ -177,8 +160,11 @@ export default function SettingsScreen() {
     try {
       const { code } = await api.createInvite();
       setInviteCode(code);
+      setInviteSheetOpen(true);
+      track(EV.INVITE_CREATED);
     } catch (err) {
       showToast(err.message, "info");
+      track(EV.PAIR_FAILED, { step: "create_invite", reason: err?.message || "unknown" });
     } finally {
       setPairingBusy(false);
     }
@@ -192,16 +178,33 @@ export default function SettingsScreen() {
       setRedeemInput("");
       await refreshMe();
       showToast(t.pairedToast, "heart");
+      track(EV.PAIR_REDEEMED, { via: "typed_code" });
     } catch (err) {
       showToast(err.message, "info");
+      track(EV.PAIR_FAILED, { via: "typed_code", reason: err?.message || "unknown" });
     } finally {
       setPairingBusy(false);
     }
   };
+
+  /* The tutorial's last step sends people here with ?invite=1, having just shown
+     them what pairing is for. Create the code straight away so they land on the
+     share sheet rather than on a settings list they have to read. */
+  const invitedRef = useRef(false);
+  useEffect(() => {
+    if (inviteParam !== "1" || invitedRef.current || me?.pairId || !me) return;
+    invitedRef.current = true;
+    handleCreateInvite();
+  }, [inviteParam, me?.pairId, me]); // eslint-disable-line
+  /* Copies the link rather than the six characters. Pasting a code into a message
+     leaves the other person with a puzzle — where do I type this? — whereas the
+     link does the pairing by itself. The code stays on screen underneath for
+     anyone who'd rather read it out. */
   const handleCopyCode = async () => {
     if (!inviteCode) return;
-    await Clipboard.setStringAsync(inviteCode);
+    await Clipboard.setStringAsync(pairingLink(inviteCode));
     showToast(t.codeCopied, "heart");
+    track(EV.INVITE_SHARED, { method: "copy_link", pairing: true });
   };
   const handleUnpair = () => {
     Alert.alert("", t.unpairConfirm.replace("{n}", partnerName), [
@@ -213,6 +216,7 @@ export default function SettingsScreen() {
           await api.unpair();
           setInviteCode(null);
           await refreshMe();
+          track(EV.UNPAIRED, { source: "settings" });
         },
       },
     ]);
@@ -225,6 +229,7 @@ export default function SettingsScreen() {
       const data = await api.exportMyData(me.personalSpaceId, me.pairSpaceId);
       const text = buildExportText(data, t, partnerName);
       await Share.share({ message: text, title: `futari-export-${todayIso}` });
+      track(EV.EXPORT_DONE);
     } catch (err) {
       if (err?.message) showToast(err.message, "info");
     }
@@ -350,7 +355,13 @@ export default function SettingsScreen() {
           </View>
 
           {!isPremium && (
-            <Pressable onPress={() => router.push("/paywall")} style={styles.premiumCard}>
+            <Pressable
+              onPress={() => {
+                router.push("/paywall");
+                track(EV.PAYWALL_VIEWED, { source: "settings_card" });
+              }}
+              style={styles.premiumCard}
+            >
               <View style={styles.premiumCardIcon}>
                 <Sparkles size={18} color="#fff" />
               </View>
@@ -447,7 +458,7 @@ export default function SettingsScreen() {
               <Row
                 icon={<Bell size={17} color={C.inkSoft} />}
                 label={t.reminderTimeLabel}
-                right={<TimeField value={reminderTime} onChange={changeReminderTime} />}
+                right={<TimeField value={reminderTime} onChange={handleReminderTimeChange} />}
               />
             )}
             <Row icon={<Heart size={17} color={C.inkSoft} />} label={t.revealNotif} right={<Pill on={revealNotifOn} />} onPress={toggleRevealNotif} />

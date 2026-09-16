@@ -16,11 +16,15 @@ import MindEditor from "../../components/MindEditor";
 import ShareSheet from "../../components/ShareSheet";
 import FloatingHearts from "../../components/FloatingHearts";
 import { PairFieldCards } from "../../components/FieldCard";
+import TutorialTarget, { useTutorialScrollProps } from "../../components/TutorialTarget";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp } from "../../lib/appState";
 import { dateLabel } from "../../lib/format";
 import { promptFor } from "../../lib/dailyContent";
 import { maybeRequestReviewAfterFirstReveal } from "../../lib/reviewPrompt";
+import { signalTutorial } from "../../lib/tutorialBus";
+import { track } from "../../lib/analytics";
+import { EV } from "../../lib/events";
 
 function ReactionIcons({ ids }) {
   return (
@@ -44,8 +48,9 @@ function ResponseCard({ name, reply, reactions, bg }) {
 }
 
 export default function TodayScreen() {
-  const { t, lang, today, todayIso, me, mode, api, getEntry, patchEntry, pairToday, refreshPairToday, partnerName, showToast } =
+  const { t, lang, today, todayIso, me, mode, api, getEntry, patchEntry, pairToday, refreshPairToday, partnerName, showToast, isDemo } =
     useApp();
+  const scrollProps = useTutorialScrollProps();
 
   const [editingField, setEditingField] = useState(null);
   const [mindOpen, setMindOpen] = useState(false);
@@ -78,7 +83,12 @@ export default function TodayScreen() {
     setHearts(true);
     showToast(t.revealedToast, "heart");
     setTimeout(() => setHearts(false), 2400);
-    maybeRequestReviewAfterFirstReveal();
+    // A demo reveal is a tutorial step, not a milestone — asking for a review on
+    // the strength of a partner who doesn't exist would be a cheap trick.
+    if (!isDemo) {
+      track(EV.REVEAL_DONE);
+      maybeRequestReviewAfterFirstReveal();
+    }
   };
 
   const handleSave = () => {
@@ -86,6 +96,7 @@ export default function TodayScreen() {
     const draft = promptDraft.current;
     if (draft !== null && draft !== e.promptAnswer) patchToday({ promptAnswer: draft });
     showToast(t.savedToast);
+    signalTutorial("saved");
   };
 
   const toggleDraftReaction = (id) => {
@@ -101,6 +112,7 @@ export default function TodayScreen() {
       setDraftReactions([]);
       setDraftReply("");
       showToast(t.responseSent.replace("{n}", partnerName), "heart");
+      if (!isDemo) track(EV.RESPONSE_SENT, { reactions: draftReactions.length, has_reply: !!draftReply.trim() });
     } catch (err) {
       showToast(err.message, "info");
     } finally {
@@ -121,7 +133,7 @@ export default function TodayScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.todaysPage}</Text>
           <Text style={styles.dateLabel}>{dateLabel(today, t, lang)}</Text>
@@ -154,8 +166,10 @@ export default function TodayScreen() {
                   <PairFieldCards entry={e} t={t} />
 
                   <View style={styles.divider} />
-                  <Text style={styles.who}>{partnerName}</Text>
-                  <PairFieldCards entry={pairToday.partner} t={t} />
+                  <TutorialTarget id="today.partner" style={{ gap: 14 }}>
+                    <Text style={styles.who}>{partnerName}</Text>
+                    <PairFieldCards entry={pairToday.partner} t={t} />
+                  </TutorialTarget>
 
                   {(pairToday.partnerReply || pairToday.partnerReactions?.length > 0) && (
                     <ResponseCard name={partnerName} reply={pairToday.partnerReply} reactions={pairToday.partnerReactions} bg={C.pink} />
@@ -164,7 +178,7 @@ export default function TodayScreen() {
                   {alreadySent ? (
                     <ResponseCard name={t.you} reply={pairToday.myReply} reactions={pairToday.myReactions} bg={C.greenSoft} />
                   ) : (
-                    <View style={styles.composer}>
+                    <TutorialTarget id="today.composer" style={styles.composer}>
                       {!!pairToday.partner?.mind && (
                         <>
                           <Text style={styles.receiveTitle}>{t.receiveTitle}</Text>
@@ -208,12 +222,12 @@ export default function TodayScreen() {
                         label={t.sendToPartner.replace("{n}", partnerName)}
                         icon={<Heart size={18} color="#fff" fill="#fff" />}
                       />
-                    </View>
+                    </TutorialTarget>
                   )}
                 </>
               ) : (
                 <>
-                  <View style={styles.promptCard}>
+                  <TutorialTarget id="today.prompt" style={styles.promptCard}>
                     <Text style={styles.promptLabel}>{t.littlePrompt}</Text>
                     <Text style={styles.promptText}>{prompt}</Text>
                     <TextInput
@@ -230,10 +244,14 @@ export default function TodayScreen() {
                       multiline
                       style={styles.promptInput}
                     />
-                  </View>
+                  </TutorialTarget>
 
-                  <BlockCard icon={<Sun size={19} color={C.sun} />} title={t.happy} text={e.happy} placeholder={t.happyPh} onPress={() => setEditingField("happy")} />
-                  <BlockCard icon={<Cloud size={19} color={C.blue} />} title={t.mind} text={e.mind} placeholder={t.mindPh} onPress={() => setMindOpen(true)} />
+                  <TutorialTarget id="today.happy">
+                    <BlockCard icon={<Sun size={19} color={C.sun} />} title={t.happy} text={e.happy} placeholder={t.happyPh} onPress={() => setEditingField("happy")} />
+                  </TutorialTarget>
+                  <TutorialTarget id="today.mind">
+                    <BlockCard icon={<Cloud size={19} color={C.blue} />} title={t.mind} text={e.mind} placeholder={t.mindPh} onPress={() => setMindOpen(true)} />
+                  </TutorialTarget>
                   <BlockCard
                     icon={<Heart size={19} color={C.green} />}
                     title={mode === "personal" ? t.nextSolo : t.next}
@@ -242,25 +260,33 @@ export default function TodayScreen() {
                     onPress={() => setEditingField("next")}
                   />
 
-                  <MoodPicker
-                    value={e.mood}
-                    label={t.mood}
-                    onChange={(id) => {
-                      patchToday({ mood: id });
-                      if (id) showToast(t.moodToast, "heart");
-                    }}
-                  />
+                  <TutorialTarget id="today.mood">
+                    <MoodPicker
+                      value={e.mood}
+                      label={t.mood}
+                      onChange={(id) => {
+                        patchToday({ mood: id });
+                        if (id) {
+                          showToast(t.moodToast, "heart");
+                          signalTutorial("mood");
+                          track(EV.MOOD_SET, { mood: id, mode });
+                        }
+                      }}
+                    />
+                  </TutorialTarget>
 
-                  <SaveButton onPress={handleSave} label={t.save} icon={<Check size={18} color="#fff" />} />
+                  <TutorialTarget id="today.save">
+                    <SaveButton onPress={handleSave} label={t.save} icon={<Check size={18} color="#fff" />} />
+                  </TutorialTarget>
 
                   {mode === "pair" && me?.pairSpaceId && (
-                    <View style={{ alignItems: "center", marginTop: 2 }}>
+                    <TutorialTarget id="today.reveal" style={{ alignItems: "center", marginTop: 2 }}>
                       <Text style={styles.revealLabel}>{revealLabel}</Text>
                       <Pressable disabled={!canReveal} onPress={doReveal} style={[styles.revealBtn, canReveal ? styles.revealBtnOn : styles.revealBtnOff]}>
                         <Heart size={16} color={canReveal ? C.pinkText : C.inkSoft} />
                         <Text style={[styles.revealBtnLabel, { color: canReveal ? C.pinkText : C.inkSoft }]}>{t.reveal}</Text>
                       </Pressable>
-                    </View>
+                    </TutorialTarget>
                   )}
                 </>
               )}

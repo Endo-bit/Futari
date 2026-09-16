@@ -10,10 +10,14 @@ import DateField from "../../components/DateField";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp, fromIso } from "../../lib/appState";
 import { promptFor, quizFor } from "../../lib/dailyContent";
+import { useTutorialScrollProps } from "../../components/TutorialTarget";
+import { track } from "../../lib/analytics";
+import { EV } from "../../lib/events";
 
 export default function HomeScreen() {
   const router = useRouter();
   const { t, lang, today, todayIso, me, setMe, mode, api, streak, pairToday, setPairToday, refreshPairToday, partnerName, myName, describeQuizChoice, showToast, getEntry } = useApp();
+  const scrollProps = useTutorialScrollProps();
   const [startDateFormOpen, setStartDateFormOpen] = useState(false);
   const [draftStartDate, setDraftStartDate] = useState(me?.startDate || null);
 
@@ -66,6 +70,7 @@ export default function HomeScreen() {
       // Pin the question text next to the answer so reopening this day from the
       // calendar always shows the question that was actually answered.
       await api.saveEntry(me.pairSpaceId, todayIso, { quizChoice: choice, quizQuestion: quizQ });
+      track(EV.QUIZ_ANSWERED, { choice });
     } finally {
       refreshPairToday();
     }
@@ -90,7 +95,7 @@ export default function HomeScreen() {
 
   return (
     <PaperBg>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.tabHome}</Text>
         </View>

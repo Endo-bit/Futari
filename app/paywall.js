@@ -10,6 +10,8 @@ import { C, fonts, cardShadow } from "../lib/theme";
 import { useApp } from "../lib/appState";
 import { useEntitlement } from "../lib/entitlement";
 import { formatPrice, deviceRegion } from "../lib/price";
+import { track } from "../lib/analytics";
+import { EV } from "../lib/events";
 
 function loadPurchases() {
   if (Platform.OS === "web") return null;
@@ -93,14 +95,19 @@ export default function Paywall() {
     if (!Purchases || !pkg) return;
     setPurchasing(true);
     setError(false);
+    track(EV.PURCHASE_STARTED, { plan: selectedPlan, product: pkg?.product?.identifier || null });
     try {
       await Purchases.purchasePackage(pkg);
       await refresh();
+      track(EV.PURCHASE_COMPLETED, { plan: selectedPlan, product: pkg?.product?.identifier || null, price: pkg?.product?.price ?? null, currency: pkg?.product?.currencyCode || null });
       router.back();
     } catch (err) {
-      if (!err?.userCancelled) {
+      if (err?.userCancelled) {
+        track(EV.PURCHASE_CANCELLED, { plan: selectedPlan });
+      } else {
         console.error("[paywall] purchasePackage failed:", err);
         showToast(err?.message || t.paywallError, "info");
+        track(EV.PURCHASE_FAILED, { plan: selectedPlan, reason: err?.message || "unknown" });
       }
     } finally {
       setPurchasing(false);
@@ -114,6 +121,7 @@ export default function Paywall() {
     try {
       await Purchases.restorePurchases();
       await refresh();
+      track(EV.RESTORE_COMPLETED);
       router.back();
     } catch (err) {
       console.error("[paywall] restorePurchases failed:", err);
@@ -162,7 +170,7 @@ export default function Paywall() {
             {hasBothPlans && (
               <View style={styles.planRow}>
                 <Pressable
-                  onPress={() => setSelectedPlan("monthly")}
+                  onPress={() => { setSelectedPlan("monthly"); track(EV.PLAN_SELECTED, { plan: "monthly" }); }}
                   style={[styles.planBtn, selectedPlan === "monthly" && styles.planBtnSel]}
                 >
                   <Text style={[styles.planLabel, { color: selectedPlan === "monthly" ? "#fff" : C.ink }]}>{t.paywallMonthlyLabel}</Text>
@@ -171,7 +179,7 @@ export default function Paywall() {
                   </Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => setSelectedPlan("annual")}
+                  onPress={() => { setSelectedPlan("annual"); track(EV.PLAN_SELECTED, { plan: "annual" }); }}
                   style={[styles.planBtn, selectedPlan === "annual" && styles.planBtnSel]}
                 >
                   <Text style={[styles.planLabel, { color: selectedPlan === "annual" ? "#fff" : C.ink }]}>{t.paywallYearlyLabel}</Text>

@@ -1,16 +1,22 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Text, Image, Pressable, Modal, StyleSheet } from "react-native";
 import { Redirect } from "expo-router";
 import { useAuth } from "@clerk/expo";
 import { AuthView } from "@clerk/expo/native";
 import { T, detectLang } from "../lib/i18n";
 import { C, fonts } from "../lib/theme";
+import { track } from "../lib/analytics";
+import { EV } from "../lib/events";
 
 export default function Landing() {
   const { isSignedIn, isLoaded } = useAuth();
   const lang = useMemo(detectLang, []);
   const t = T[lang];
   const [authOpen, setAuthOpen] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) track(EV.LANDING_VIEWED, { lang });
+  }, [isLoaded, isSignedIn, lang]);
 
   if (!isLoaded) return <View style={{ flex: 1, backgroundColor: C.paper }} />;
   if (isSignedIn) return <Redirect href="/(tabs)/home" />;
@@ -23,10 +29,10 @@ export default function Landing() {
         <Text style={styles.tagline}>{t.landingTagline}</Text>
 
         <View style={styles.buttons}>
-          <Pressable style={styles.primaryBtn} onPress={() => setAuthOpen(true)}>
+          <Pressable style={styles.primaryBtn} onPress={() => { track(EV.SIGNIN_STARTED, { cta: "get_started" }); setAuthOpen(true); }}>
             <Text style={styles.primaryBtnText}>{t.landingGetStarted}</Text>
           </Pressable>
-          <Pressable style={styles.secondaryBtn} onPress={() => setAuthOpen(true)}>
+          <Pressable style={styles.secondaryBtn} onPress={() => { track(EV.SIGNIN_STARTED, { cta: "log_in" }); setAuthOpen(true); }}>
             <Text style={styles.secondaryBtnText}>{t.landingSignIn}</Text>
           </Pressable>
         </View>

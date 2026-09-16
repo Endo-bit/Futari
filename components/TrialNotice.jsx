@@ -5,6 +5,8 @@ import { useRouter } from "expo-router";
 import { Heart, Sparkles } from "lucide-react-native";
 import { C, fonts, deepShadow } from "../lib/theme";
 import { useApp } from "../lib/appState";
+import { track } from "../lib/analytics";
+import { EV } from "../lib/events";
 
 /* A nudge on day 2 and day 4 of the free trial, while there is still time to
    subscribe before the pairing is released.
@@ -34,6 +36,7 @@ export default function TrialNotice() {
       if (cancelled || seen) return;
       setDay(trialDayIndex);
       setVisible(true);
+      track(EV.TRIAL_NOTICE_VIEWED, { day: trialDayIndex, days_left: trialDaysLeft });
     });
     return () => {
       cancelled = true;
@@ -47,6 +50,8 @@ export default function TrialNotice() {
 
   const goPremium = async () => {
     await dismiss();
+    track(EV.TRIAL_NOTICE_CTA, { day });
+    track(EV.PAYWALL_VIEWED, { source: "trial_notice" });
     router.push("/paywall");
   };
 

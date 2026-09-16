@@ -19,7 +19,14 @@ import * as SplashScreen from "expo-splash-screen";
 import { View } from "react-native";
 import { EntitlementProvider } from "../lib/entitlement";
 import { AppStateProvider } from "../lib/appState";
+import { TutorialProvider } from "../lib/tutorial";
+import TutorialOverlay from "../components/TutorialOverlay";
+import DeepLinkHandler from "../components/DeepLinkHandler";
+import { initAnalytics, track } from "../lib/analytics";
+import { EV } from "../lib/events";
 import { C } from "../lib/theme";
+
+initAnalytics();
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -47,6 +54,10 @@ function RootReady({ children }) {
     onLayout();
   }, [onLayout]);
 
+  useEffect(() => {
+    track(EV.APP_OPENED);
+  }, []);
+
   if (!ready) return <View style={{ flex: 1, backgroundColor: C.paper }} />;
   return children;
 }
@@ -60,12 +71,22 @@ export default function RootLayout() {
       <RootReady>
         <EntitlementProvider>
           <AppStateProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="entry/[date]" options={{ presentation: "modal" }} />
-              <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
-            </Stack>
+            <TutorialProvider>
+              {/* The tour dims around a hole so the real control stays tappable,
+                  which means it has to be positioned against the whole window —
+                  hence a plain flex parent here rather than inside the tab layout,
+                  whose safe-area inset would shift every measurement down. */}
+              <View style={{ flex: 1 }}>
+                <Stack screenOptions={{ headerShown: false }}>
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="(tabs)" />
+                  <Stack.Screen name="entry/[date]" options={{ presentation: "modal" }} />
+                  <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
+                </Stack>
+                <TutorialOverlay />
+              </View>
+              <DeepLinkHandler />
+            </TutorialProvider>
           </AppStateProvider>
         </EntitlementProvider>
       </RootReady>

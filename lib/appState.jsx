@@ -6,6 +6,11 @@ import { T, LANGS, detectLang } from "./i18n";
 import { isoOf, fromIso } from "./format";
 import { useApi } from "./api";
 import { useEntitlement } from "./entitlement";
+import { useDemoPair } from "./demoPair";
+import { signalTutorial } from "./tutorialBus";
+import { resyncReminder } from "./reminder";
+import { identify, setSuperProperties, track, resetAnalytics } from "./analytics";
+import { EV } from "./events";
 import {
   DEFAULT_WIDGET_MODE,
   getWidgetMode,
@@ -76,11 +81,41 @@ export function AppStateProvider({ children }) {
     return data;
   }, [api]);
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isSignedIn) {
+      // A shared phone must not attribute the next person's session to the last.
+      resetAnalytics();
+      return;
+    }
+    track(EV.SIGNIN_COMPLETED);
     refreshMe().then((data) => {
       if (data.pairId) setModeState("pair");
     });
   }, [isSignedIn]); // eslint-disable-line
+
+  /* Who this is, and the handful of properties every funnel wants to break down
+     by. Sent on each change of `me` so "paired" and "entitled" stay true as they
+     change rather than describing the user as they were at first launch. */
+  useEffect(() => {
+    if (!me?.userId) return;
+    const props = {
+      paired: !!me.pairId,
+      premium: !!me.premiumActive,
+      trial_active: !!me.trialActive,
+      trial_available: !!me.trialAvailable,
+      lang,
+    };
+    identify(me.userId, props);
+    setSuperProperties(props);
+  }, [me?.userId, me?.pairId, me?.premiumActive, me?.trialActive, me?.trialAvailable, lang]); // eslint-disable-line
+
+  /* Re-arm the daily reminder on launch. iOS keeps scheduled notifications
+     across restarts, but not across a reinstall or a restore to a new phone, and
+     this is also where the server learns the device's current time zone — the
+     cron needs it to push at the hour the user actually chose. */
+  useEffect(() => {
+    if (!me?.userId) return;
+    resyncReminder({ api, t }).catch(() => {});
+  }, [me?.userId]); // eslint-disable-line
 
   const setMode = useCallback((m) => setModeState(m), []);
   const spaceId = me ? (mode === "pair" && me.pairSpaceId ? me.pairSpaceId : me.personalSpaceId) : null;
@@ -108,9 +143,24 @@ export function AppStateProvider({ children }) {
   }, [spaceId]); // eslint-disable-line
 
   const getEntry = useCallback((dIso) => entries[dIso] || EMPTY, [entries]);
+  const wroteAnyRef = useRef(false);
   const patchEntry = useCallback(
     (dIso, patch) => {
       setEntries((es) => ({ ...es, [dIso]: { ...(es[dIso] || EMPTY), ...patch } }));
+
+      /* The tutorial waits on these rather than on a "next" button, and the
+         funnel is built out of them. Only a field that now has something in it
+         counts — blurring an empty box is not writing. */
+      for (const field of Object.keys(patch)) {
+        if (!patch[field]) continue;
+        signalTutorial(`wrote:${field}`);
+        track(EV.ENTRY_SAVED, { field, mode });
+        if (!wroteAnyRef.current) {
+          wroteAnyRef.current = true;
+          track(EV.FIRST_ENTRY_WRITTEN, { field, mode });
+        }
+      }
+
       if (!spaceId) return;
       api.saveEntry(spaceId, dIso, patch).then(() => {
         if (mode === "pair" && dIso === todayIso) refreshPairToday();
@@ -204,30 +254,16 @@ export function AppStateProvider({ children }) {
   }, []);
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
-  const [tutorialOpen, setTutorialOpen] = useState(false);
-  const [tutorialStep, setTutorialStep] = useState(0);
-  // Only the very first (auto-triggered) run of the tutorial pitches the pairing
-  // trial — replays from Settings ("How Futari works") never should, regardless of
-  // pairing status.
-  const [tutorialIsFirstRun, setTutorialIsFirstRun] = useState(false);
-  useEffect(() => {
-    AsyncStorage.getItem("futari_tutorial_seen").then((seen) => {
-      if (!seen) {
-        setTutorialIsFirstRun(true);
-        setTutorialOpen(true);
-      }
-    });
-  }, []);
-  const closeTutorial = useCallback(() => {
-    setTutorialOpen(false);
-    setTutorialStep(0);
-    AsyncStorage.setItem("futari_tutorial_seen", "1").catch(() => {});
-  }, []);
-  const openTutorial = useCallback(() => {
-    setTutorialStep(0);
-    setTutorialIsFirstRun(false);
-    setTutorialOpen(true);
-  }, []);
+  /* The tour itself lives in ./tutorial, one provider below this one — it needs
+     everything here to drive the real screens. Settings still asks for a replay
+     through `useApp`, so the request goes out over the bus rather than dragging
+     the tutorial's React tree up into this file. */
+  const openTutorial = useCallback(() => signalTutorial("tutorial:open"), []);
+
+  /* The demo partner. Held here because AppStateProvider is the only thing that
+     can put it in front of the screens: while it's running, the values below are
+     swapped for a pair that isn't real. */
+  const demo = useDemoPair({ t, todayIso });
 
   /* Entitlement = a live subscription OR an unexpired free trial. The trial half
      is server state (users/<uid>.trialStartedAt), so it survives signing out,
@@ -252,7 +288,7 @@ export function AppStateProvider({ children }) {
      unpair a perfectly valid subscriber on their way out. The client now only
      reflects what the server decided. */
 
-  const value = {
+  const base = {
     api,
     lang, setLang, t,
     today, todayIso,
@@ -266,8 +302,13 @@ export function AppStateProvider({ children }) {
     trialActive, trialAvailable, trialDaysLeft, trialDayIndex, trialEndsAt,
     widgetMode, chooseWidgetMode, widgetSpecialDayId, chooseWidgetSpecialDay,
     toast, showToast,
-    tutorialOpen, tutorialStep, setTutorialStep, tutorialIsFirstRun, openTutorial, closeTutorial,
+    openTutorial, demo,
+    isDemo: false,
   };
+
+  // While the demo runs, the screens are handed a pair that doesn't exist. They
+  // never find out: same keys, same shapes, no branching anywhere downstream.
+  const value = demo.active ? { ...base, ...demo.buildOverrides(base) } : base;
 
   return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
 }

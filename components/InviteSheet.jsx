@@ -9,10 +9,18 @@ import InviteCard from "./InviteCard";
 import SaveButton from "./SaveButton";
 import { C, fonts, deepShadow } from "../lib/theme";
 import { useApp } from "../lib/appState";
+import { pairingLink } from "../lib/deepLinks";
+import { track } from "../lib/analytics";
+import { EV } from "../lib/events";
 
 const FALLBACK_URL = "https://futari-nine.vercel.app";
 
-function inviteUrl() {
+/* With a code, the link IS the pairing — tapping it opens the app already
+   holding the code, and /pair/<code> on the web offers the App Store to anyone
+   who doesn't have it yet, keeping the code for after they install. Without one
+   this is the generic "you might like this" share, so a store link is right. */
+function inviteUrl(code) {
+  if (code) return pairingLink(code);
   return StoreReview.storeUrl() || FALLBACK_URL;
 }
 
@@ -38,8 +46,9 @@ export default function InviteSheet({ visible, onClose, code }) {
       await Sharing.shareAsync(fileUri, {
         mimeType: "image/png",
         UTI: "public.png",
-        dialogTitle: t.inviteFriendShareTitle,
+        dialogTitle: code ? t.pairInviteShareTitle : t.inviteFriendShareTitle,
       });
+      track(EV.INVITE_SHARED, { method: "image", pairing: !!code });
     } catch (err) {
       console.warn("[invite] capture/share failed:", err?.message || err);
       showToast(t.shareFailed, "info");
@@ -49,11 +58,12 @@ export default function InviteSheet({ visible, onClose, code }) {
   };
 
   const shareText = async () => {
-    const message = t.inviteFriendMessage.replace("{url}", inviteUrl());
+    const template = code ? t.pairInviteMessage : t.inviteFriendMessage;
+    const title = code ? t.pairInviteShareTitle : t.inviteFriendShareTitle;
+    const message = template.replace("{url}", inviteUrl(code));
     try {
-      await Share.share(
-        Platform.OS === "android" ? { message, title: t.inviteFriendShareTitle } : { message }
-      );
+      await Share.share(Platform.OS === "android" ? { message, title } : { message });
+      track(EV.INVITE_SHARED, { method: "text", pairing: !!code });
     } catch {
       // dismissed — nothing to do
     }

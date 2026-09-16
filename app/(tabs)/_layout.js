@@ -7,7 +7,6 @@ import { useAuth } from "@clerk/expo";
 import { C, fonts } from "../../lib/theme";
 import { useApp } from "../../lib/appState";
 import ToastView from "../../components/Toast";
-import TutorialOverlay from "../../components/TutorialOverlay";
 import TrialNotice from "../../components/TrialNotice";
 
 export default function TabsLayout() {
@@ -55,7 +54,6 @@ export default function TabsLayout() {
       </Tabs>
 
       <ToastView />
-      <TutorialOverlay />
       <TrialNotice />
     </SafeAreaView>
   );
