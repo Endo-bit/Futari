@@ -108,6 +108,13 @@ export function TutorialProvider({ children }) {
     [step?.target, measure]
   );
 
+  /* The overlay asks for this when the keyboard opens or closes: the page slides
+     under KeyboardAvoidingView, so the hole we cut is in the wrong place until we
+     look again. */
+  const refreshRect = useCallback(() => {
+    if (step?.target) measure(step.target);
+  }, [step?.target, measure]);
+
   /* ── Running the tour ─────────────────────────────────────────── */
 
   const finish = useCallback(
@@ -261,10 +268,11 @@ export function TutorialProvider({ children }) {
       registerScroll,
       noteScroll,
       onTargetLayout,
+      refreshRect,
     }),
     [
       active, step, index, rect, busy, next, skip, start, startDemo,
-      enableNotifications, startInvite, registerTarget, registerScroll, noteScroll, onTargetLayout,
+      enableNotifications, startInvite, registerTarget, registerScroll, noteScroll, onTargetLayout, refreshRect,
     ]
   );
 
@@ -295,4 +303,5 @@ const INERT = {
   registerScroll: () => {},
   noteScroll: () => {},
   onTargetLayout: () => {},
+  refreshRect: () => {},
 };

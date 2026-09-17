@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Dimensions, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, StyleSheet, Dimensions, ActivityIndicator, Keyboard, Platform } from "react-native";
 import { Heart, Sparkles, Bell, Send, ChevronRight } from "lucide-react-native";
 import { C, fonts, deepShadow } from "../lib/theme";
 import { useApp } from "../lib/appState";
@@ -13,12 +13,20 @@ import { useTutorial } from "../lib/tutorial";
    overlay with pointerEvents="none" couldn't block the rest of the screen, and
    one with "auto" would swallow the tap we're asking for. Four panels give both.
 
-   Steps that wait on the user show no "next" — they advance when it happens. An
-   escape hatch fades in a few seconds later so nobody can be stranded. */
+   Two things learned from watching someone use it:
 
-const ESCAPE_HATCH_MS = 6000;
+   Every step shows the same button in the same place. Steps that wait for the
+   user still advance on their own the moment they do the thing — but hiding the
+   button while waiting read as the tour being broken, and "why is there no
+   button on this one" is a worse problem than someone tapping past a step.
+
+   The bubble dodges the keyboard. Writing an answer is the first thing the tour
+   asks for, and the keyboard covered the button that came next. */
+
 const BUBBLE_MARGIN = 14;
-const BUBBLE_EST_HEIGHT = 230;
+/* Only used before the bubble has laid out once and told us how tall it really
+   is; after that the real height decides whether it goes above or below. */
+const BUBBLE_FALLBACK_HEIGHT = 190;
 
 function Panel({ style }) {
   return <View pointerEvents="auto" style={[styles.dim, style]} />;
@@ -34,42 +42,66 @@ function CtaIcon({ cta }) {
 
 export default function TutorialOverlay() {
   const { t } = useApp();
-  const { active, step, index, total, rect, busy, next, skip, startDemo, enableNotifications, startInvite } =
+  const { active, step, index, total, rect, busy, next, skip, startDemo, enableNotifications, startInvite, refreshRect } =
     useTutorial();
-  const [escapeVisible, setEscapeVisible] = useState(false);
+  const [keyboard, setKeyboard] = useState(0);
+  const [bubbleH, setBubbleH] = useState(0);
 
-  // Reset and re-arm the escape hatch on every step.
   useEffect(() => {
-    setEscapeVisible(false);
-    if (!step?.await) return;
-    const timer = setTimeout(() => setEscapeVisible(true), ESCAPE_HATCH_MS);
+    // willShow on iOS so the bubble moves with the keyboard rather than after it.
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+    const shown = Keyboard.addListener(showEvent, (e) => setKeyboard(e.endCoordinates?.height || 0));
+    const hidden = Keyboard.addListener(hideEvent, () => setKeyboard(0));
+    return () => {
+      shown.remove();
+      hidden.remove();
+    };
+  }, []);
+
+  /* KeyboardAvoidingView shifts the page under us, so the hole we cut is in the
+     wrong place until we look again. */
+  useEffect(() => {
+    const timer = setTimeout(refreshRect, 260);
     return () => clearTimeout(timer);
-  }, [step?.id, step?.await]);
+  }, [keyboard, refreshRect]);
+
+  useEffect(() => setBubbleH(0), [step?.id]);
 
   if (!active || !step) return null;
 
   const { width: screenW, height: screenH } = Dimensions.get("window");
   const spotlit = !!step.target && !!rect;
+  const height = bubbleH || BUBBLE_FALLBACK_HEIGHT;
 
-  // Where the bubble goes: under the control if it fits, otherwise above it.
-  let bubblePos = { top: screenH / 2 - BUBBLE_EST_HEIGHT / 2 };
-  if (spotlit) {
+  /* Above the keyboard whenever there is one — nothing else matters while it's
+     up, because everything below it is unreachable. Otherwise under the spotlit
+     control if it fits, above it if it doesn't, centred if there isn't one. */
+  let bubblePos;
+  if (keyboard > 0) {
+    bubblePos = { bottom: keyboard + BUBBLE_MARGIN };
+  } else if (spotlit) {
     const below = rect.y + rect.height + BUBBLE_MARGIN;
     bubblePos =
-      below + BUBBLE_EST_HEIGHT < screenH - 24
+      below + height < screenH - 24
         ? { top: below }
         : { bottom: Math.max(24, screenH - rect.y + BUBBLE_MARGIN) };
+  } else {
+    bubblePos = { top: Math.max(24, screenH / 2 - height / 2) };
   }
 
-  const title = t[step.titleKey] || "";
-  const body = (t[step.bodyKey] || "").replace("{n}", t.demoPartnerName);
+  const fill = (s) => (s || "").replaceAll("{n}", t.demoPartnerName);
+  const title = fill(t[step.titleKey]);
+  const body = fill(t[step.bodyKey]);
 
-  const primary = {
-    start: { label: t.tutStart, onPress: next },
-    demo: { label: t.tutDemoCta, onPress: startDemo },
-    notif: { label: t.tutNotifCta, onPress: enableNotifications },
-    invite: { label: t.tutInviteCta, onPress: startInvite },
-  }[step.cta] || (step.await ? null : { label: t.tutNext, onPress: next });
+  // Never null: the slot always holds a button, whatever the step is doing.
+  const primary =
+    {
+      start: { label: t.tutStart, onPress: next },
+      demo: { label: t.tutDemoCta, onPress: startDemo },
+      notif: { label: t.tutNotifCta, onPress: enableNotifications },
+      invite: { label: t.tutInviteCta, onPress: startInvite },
+    }[step.cta] || { label: t.tutNext, onPress: next };
 
   const secondaryLabel =
     step.cta === "notif" ? t.tutNotifLater : step.cta === "invite" ? t.tutInviteLater : null;
@@ -101,51 +133,48 @@ export default function TutorialOverlay() {
         <Panel style={StyleSheet.absoluteFillObject} />
       )}
 
-      <View style={[styles.bubble, bubblePos]} pointerEvents="auto">
+      <View
+        style={[styles.bubble, bubblePos]}
+        pointerEvents="auto"
+        onLayout={(e) => setBubbleH(e.nativeEvent.layout.height)}
+      >
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${((index + 1) / total) * 100}%` }]} />
         </View>
 
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.body}>{body}</Text>
+        {!!body && <Text style={styles.body}>{body}</Text>}
 
-        {step.await && !primary && (
+        {!!step.await && (
           <View style={styles.waitingRow}>
-            <Sparkles size={14} color={C.pinkText} />
+            <Sparkles size={13} color={C.pinkText} />
             <Text style={styles.waiting}>{t.tutYourTurn}</Text>
           </View>
         )}
 
-        {primary && (
-          <Pressable style={styles.primaryBtn} onPress={primary.onPress} disabled={busy}>
-            {busy ? <ActivityIndicator color="#fff" /> : <CtaIcon cta={step.cta} />}
-            <Text style={styles.primaryLabel}>{primary.label}</Text>
-          </Pressable>
-        )}
+        <Pressable style={styles.primaryBtn} onPress={primary.onPress} disabled={busy}>
+          {busy ? <ActivityIndicator color="#fff" /> : <CtaIcon cta={step.cta} />}
+          <Text style={styles.primaryLabel}>{fill(primary.label)}</Text>
+        </Pressable>
 
-        {secondaryLabel && (
+        {secondaryLabel ? (
           <Pressable onPress={next} disabled={busy} style={styles.secondaryBtn}>
             <Text style={styles.secondaryLabel}>{secondaryLabel}</Text>
           </Pressable>
-        )}
-
-        <View style={styles.footerRow}>
-          <Pressable onPress={skip} hitSlop={8}>
+        ) : (
+          <Pressable onPress={skip} hitSlop={8} style={styles.secondaryBtn}>
             <Text style={styles.skip}>{t.tutExit}</Text>
           </Pressable>
-          {step.await && escapeVisible && (
-            <Pressable onPress={next} hitSlop={8}>
-              <Text style={styles.skipStep}>{t.tutSkipStep}</Text>
-            </Pressable>
-          )}
-        </View>
+        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  dim: { position: "absolute", backgroundColor: "rgba(74,64,54,0.62)" },
+  // Darker than it was: at 0.62 the page behind competed with the bubble for
+  // attention and the whole thing read as a wall of text over a busy page.
+  dim: { position: "absolute", backgroundColor: "rgba(38,31,24,0.80)" },
   ring: {
     position: "absolute",
     borderRadius: 22,
@@ -159,17 +188,17 @@ const styles = StyleSheet.create({
     backgroundColor: C.card,
     borderRadius: 24,
     paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 14,
-    gap: 9,
+    paddingTop: 15,
+    paddingBottom: 10,
+    gap: 8,
     ...deepShadow,
   },
-  progressTrack: { height: 3, borderRadius: 999, backgroundColor: C.cardBorder, overflow: "hidden", marginBottom: 2 },
+  progressTrack: { height: 3, borderRadius: 999, backgroundColor: C.cardBorder, overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 999, backgroundColor: C.pinkDeep },
-  title: { fontFamily: fonts.scriptSemiBold, fontSize: 25, lineHeight: 37, paddingRight: 8, color: C.ink },
-  body: { fontFamily: fonts.bodyRegular, fontSize: 14, lineHeight: 21, color: C.ink },
-  waitingRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
-  waiting: { fontFamily: fonts.bodyExtraBold, fontSize: 12.5, color: C.pinkText },
+  title: { fontFamily: fonts.scriptSemiBold, fontSize: 26, lineHeight: 36, paddingRight: 8, color: C.ink },
+  body: { fontFamily: fonts.bodyRegular, fontSize: 14, lineHeight: 20, color: C.ink },
+  waitingRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  waiting: { fontFamily: fonts.bodyExtraBold, fontSize: 12, color: C.pinkText },
   primaryBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -177,13 +206,11 @@ const styles = StyleSheet.create({
     gap: 8,
     backgroundColor: C.pinkDeep,
     borderRadius: 999,
-    paddingVertical: 13,
-    marginTop: 4,
+    paddingVertical: 12,
+    marginTop: 2,
   },
   primaryLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
-  secondaryBtn: { alignItems: "center", paddingVertical: 8 },
-  secondaryLabel: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: C.inkSoft },
-  footerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 2 },
+  secondaryBtn: { alignItems: "center", paddingVertical: 6 },
+  secondaryLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.inkSoft },
   skip: { fontFamily: fonts.bodySemiBold, fontSize: 12, color: C.inkSoft },
-  skipStep: { fontFamily: fonts.bodySemiBold, fontSize: 12, color: C.pinkText },
 });
