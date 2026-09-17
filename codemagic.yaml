@@ -10,6 +10,16 @@ workflows:
         BUNDLE_ID: "com.futarimobile.app"
         XCODE_WORKSPACE: "ios/Futari.xcworkspace"
         XCODE_SCHEME: "Futari"
+        # PostHog's *project* API key, which is write-only and designed to be
+        # public: it is compiled into the .ipa that ships to the App Store, so
+        # anyone with the app already has it. It sits here rather than in the
+        # futari_mobile_env group only because the group needs the Codemagic UI
+        # and this file does not. To move it there instead, add
+        # EXPO_PUBLIC_POSTHOG_KEY to the group and delete this line.
+        # Note this repo is public, so the key is a grep away rather than a
+        # binary unpack away. The worst anyone can do with it is post junk
+        # events into the project; it cannot read anything back.
+        EXPO_PUBLIC_POSTHOG_KEY: "phc_u5FNmwdhqF7CDaB5rmQWgPAmmVg99VTfWXbwhrRFETi2"
       node: 20
       xcode: latest
       cocoapods: default
