@@ -1,13 +1,14 @@
-WIDGETS
-Vuestra página, siempre a mano. Añadid Futari a la pantalla de inicio o a la de bloqueo y elegid qué muestra: lo que tu pareja quiere hacer luego, la pequeña pregunta del día, vuestro quiz, vuestros días juntos o una cuenta atrás para una fecha especial.
+UNA PRIMERA VEZ GUIADA
+En vez de explicarte Futari, ahora escribe una página contigo. Cada paso ilumina el control real en la pantalla real y espera hasta que lo hayas hecho de verdad. Al final has escrito tu día y has abierto una página con alguien.
 
-COMPARTIR UNA PÁGINA
-Convertid un día en una imagen que apetece guardar. Incluir la parte de tu pareja siempre lo decides tú.
+PRUEBA EL DIARIO COMPARTIDO ANTES DE VINCULARTE
+Aquello para lo que existe Futari —escribir por separado y abrir a la vez— ya no depende de convencer a nadie de instalar una app. Escribe tu página frente a una pareja de mentira, abrid las dos a la vez y devuélvele una respuesta. Nada de la demo se guarda.
 
-PALABRAS MÁS SUAVES, AHORA MÁS LISTAS
-Si lo que escribes puede sonar demasiado duro, Futari te propone ahora tres formas más amables de decirlo, escritas a partir de tus propias palabras.
+VINCULARSE EN UN TOQUE
+Las invitaciones ahora son un enlace. Tu pareja lo toca y quedáis vinculados: sin códigos de seis caracteres que dictar y sin rebuscar en los ajustes.
 
-TAMBIÉN CORREGIDO
-- Las páginas que abrís desde el calendario vuelven a mostrar la pregunta y el quiz con los que se escribieron
-- Los precios aparecen con el formato de tu país
-- El teclado ya no tapa el botón de guardar, y guardar conserva exactamente lo que hay en pantalla
+RECORDATORIOS A LA HORA QUE ELEGISTE
+El recordatorio de la tarde llega a tu hora y en tu zona horaria; antes ignoraba la hora que habías elegido. Responder solo a la pregunta del día ya cuenta como haber escrito, así que no te avisará de una página que ya has rellenado.
+
+TRES MESES DE PREGUNTAS
+Seis veces más preguntas para escribir y el triple de preguntas de pareja. Escribiendo a solas antes volvías a la misma pregunta en quince días.

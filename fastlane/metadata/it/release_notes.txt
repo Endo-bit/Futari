@@ -1,13 +1,14 @@
-WIDGET
-La vostra pagina sempre a portata di mano. Aggiungete Futari alla schermata Home o di blocco e scegliete cosa mostrare: cosa vuole fare il partner la prossima volta, il piccolo spunto del giorno, il vostro quiz, i vostri giorni insieme o un conto alla rovescia per una data speciale.
+UN PRIMO AVVIO GUIDATO
+Invece di spiegarti Futari, ora scrive una pagina insieme a te. Ogni passo illumina il comando vero sullo schermo vero e aspetta finché non l'hai davvero fatto. Alla fine hai scritto la tua giornata e aperto una pagina con qualcuno.
 
-CONDIVIDERE UNA PAGINA
-Trasformate una giornata in un'immagine da conservare. Includere la parte del partner è sempre una tua scelta.
+PROVA IL DIARIO CONDIVISO PRIMA DI COLLEGARTI
+Quello per cui Futari esiste — scrivere separati e aprire insieme — non dipende più dal convincere qualcuno a installare un'app. Scrivi la tua pagina davanti a una controfigura, apritele nello stesso momento e mandale una risposta. Niente della demo viene salvato.
 
-PAROLE PIÙ DOLCI, ORA PIÙ ATTENTE
-Quando quello che scrivi rischia di ferire, Futari ti propone ora tre modi più delicati per dirlo, scritti a partire dalle tue parole.
+COLLEGARSI CON UN TOCCO
+Gli inviti ora sono un link. La tua persona lo tocca e siete collegati: nessun codice di sei caratteri da dettare, nessuna caccia nelle impostazioni.
 
-ALTRE CORREZIONI
-- Le pagine aperte dal calendario mostrano di nuovo lo spunto e il quiz con cui sono state scritte
-- I prezzi appaiono nel formato del tuo Paese
-- La tastiera non copre più il pulsante di salvataggio, e salvare conserva esattamente ciò che è sullo schermo
+PROMEMORIA ALL'ORA CHE HAI SCELTO
+Il promemoria della sera arriva alla tua ora, nel tuo fuso orario; prima ignorava l'ora scelta. Rispondere solo alla domanda del giorno conta come aver scritto, quindi non ti richiamerà per una pagina già compilata.
+
+TRE MESI DI DOMANDE
+Sei volte più domande su cui scrivere e il triplo delle domande di coppia. Scrivendo da solo, prima tornavi sulla stessa domanda in quindici giorni.

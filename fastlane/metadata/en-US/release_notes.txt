@@ -1,13 +1,14 @@
-WIDGETS
-Keep your page close. Add Futari to your Home or Lock Screen and choose what it shows — what your partner wants to do next, today's little prompt, your couple quiz, your days together, or a countdown to a special day.
+A GUIDED FIRST RUN
+Instead of explaining Futari, it now writes a page with you. Each step lights up the real control on the real screen and waits until you have actually done it — by the end you have written today and opened a page with someone.
 
-SHARE A PAGE
-Turn a day into a picture worth keeping. Whether your partner's side comes with it is always your choice.
+TRY THE SHARED DIARY BEFORE YOU PAIR
+The part Futari is really for — writing apart, then opening together — no longer waits on talking someone into installing an app. Write your page opposite a stand-in partner, reveal the two side by side, and send a reply back. Nothing from the demo is saved.
 
-SOFTER WORDING, NOW SMARTER
-When something you write might sting, Futari now offers three gentler ways to say it, written for your own words.
+ONE TAP TO PAIR
+Invites are a link now. Your partner taps it and you are paired — no six-character code to read out, no hunting through Settings.
 
-ALSO FIXED
-- Pages opened from the calendar now show the prompt and couple quiz they were actually written with
-- Prices now appear the way your country writes them
-- The keyboard no longer hides the save button, and saving now keeps exactly what's on screen
+REMINDERS AT THE TIME YOU CHOSE
+The evening reminder now arrives at your time, in your time zone; it used to ignore the hour you picked. Answering only the day's prompt counts as having written, so it will not nudge you about a page you have already filled in.
+
+THREE MONTHS OF PROMPTS
+Six times as many prompts to write to, and three times as many couple questions. Writing on your own used to come back around to the same question inside a fortnight.

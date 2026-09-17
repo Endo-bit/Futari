@@ -1,13 +1,14 @@
-WIDGETS
-Eure Seite immer griffbereit. Fügt Futari zum Home- oder Sperrbildschirm hinzu und wählt selbst, was dort steht — was dein:e Partner:in als Nächstes vorhat, der Impuls des Tages, euer Paarquiz, eure Tage zusammen oder ein Countdown zu einem besonderen Tag.
+EIN GEFÜHRTER START
+Statt Futari zu erklären, schreibt es jetzt eine Seite mit dir. Jeder Schritt hebt die echte Schaltfläche auf dem echten Bildschirm hervor und wartet, bis du es wirklich getan hast. Am Ende hast du deinen Tag geschrieben und eine Seite mit jemandem geöffnet.
 
-EINE SEITE TEILEN
-Macht aus einem Tag ein Bild zum Behalten. Ob die Seite deiner:s Partner:in dabei ist, entscheidest immer du.
+DAS GETEILTE TAGEBUCH AUSPROBIEREN, BEVOR IHR VERBUNDEN SEID
+Wofür Futari eigentlich da ist — getrennt schreiben, gemeinsam öffnen — hängt nicht mehr davon ab, jemanden zum Installieren zu überreden. Schreib deine Seite gegenüber einer Platzhalterin, deckt beide zugleich auf und schick eine Antwort zurück. Nichts aus der Demo wird gespeichert.
 
-SANFTERE WORTE, JETZT KLÜGER
-Wenn etwas zu hart klingen könnte, schlägt Futari jetzt drei sanftere Formulierungen vor — geschrieben für genau deine Worte.
+VERBINDEN MIT EINEM TIPP
+Einladungen sind jetzt ein Link. Dein Gegenüber tippt ihn an, und ihr seid verbunden — kein sechsstelliger Code zum Vorlesen, kein Suchen in den Einstellungen.
 
-AUSSERDEM BEHOBEN
-- Seiten aus dem Kalender zeigen wieder den Impuls und das Paarquiz, mit denen sie geschrieben wurden
-- Preise erscheinen jetzt so, wie man sie in deinem Land schreibt
-- Die Tastatur verdeckt den Speichern-Button nicht mehr, und Speichern sichert genau das, was auf dem Bildschirm steht
+ERINNERUNGEN ZU DEINER UHRZEIT
+Die Abenderinnerung kommt nun zu deiner Zeit, in deiner Zeitzone; bisher ignorierte sie die gewählte Uhrzeit. Nur die Tagesfrage zu beantworten zählt als geschrieben, also mahnt sie dich nicht wegen einer Seite, die schon voll ist.
+
+DREI MONATE FRAGEN
+Sechsmal so viele Fragen zum Schreiben und dreimal so viele Paarfragen. Wer allein schrieb, traf schon nach zwei Wochen wieder auf dieselbe Frage.

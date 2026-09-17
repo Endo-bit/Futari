@@ -1,13 +1,14 @@
-WIDGETS
-Su página, siempre a la mano. Agreguen Futari a la pantalla de inicio o a la de bloqueo y elijan qué muestra: lo que tu pareja quiere hacer después, la pequeña pregunta del día, su quiz, sus días juntos o una cuenta regresiva para una fecha especial.
+UN PRIMER RECORRIDO GUIADO
+En lugar de explicarte Futari, ahora escribe una página contigo. Cada paso ilumina el control real en la pantalla real y espera hasta que lo hayas hecho de verdad. Al final ya escribiste tu día y abriste una página con alguien.
 
-COMPARTIR UNA PÁGINA
-Conviertan un día en una imagen que dan ganas de guardar. Incluir la parte de tu pareja siempre lo decides tú.
+PRUEBA EL DIARIO COMPARTIDO ANTES DE VINCULARTE
+Aquello para lo que existe Futari —escribir por separado y abrir al mismo tiempo— ya no depende de convencer a alguien de instalar una app. Escribe tu página frente a una pareja de prueba, ábranlas al mismo tiempo y mándale una respuesta. Nada de la demo se guarda.
 
-PALABRAS MÁS SUAVES, AHORA MÁS INTELIGENTES
-Cuando algo que escribes puede sonar muy duro, Futari ahora te ofrece tres formas más amables de decirlo, escritas a partir de tus propias palabras.
+VINCULARSE CON UN TOQUE
+Las invitaciones ahora son un enlace. Tu pareja lo toca y quedan vinculados: sin códigos de seis caracteres que dictar y sin buscar entre los ajustes.
 
-TAMBIÉN CORREGIDO
-- Las páginas que abren desde el calendario vuelven a mostrar la pregunta y el quiz con los que se escribieron
-- Los precios aparecen con el formato de tu país
-- El teclado ya no tapa el botón de guardar, y guardar conserva exactamente lo que está en pantalla
+RECORDATORIOS A LA HORA QUE ELEGISTE
+El recordatorio de la tarde llega a tu hora y en tu zona horaria; antes ignoraba la hora que habías elegido. Responder solo a la pregunta del día ya cuenta como haber escrito, así que no te va a insistir por una página que ya llenaste.
+
+TRES MESES DE PREGUNTAS
+Seis veces más preguntas para escribir y el triple de preguntas de pareja. Escribiendo solo, antes volvías a la misma pregunta en dos semanas.

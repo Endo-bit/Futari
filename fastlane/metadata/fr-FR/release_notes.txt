@@ -1,13 +1,14 @@
-WIDGETS
-Votre page toujours à portée de main. Ajoutez Futari à votre écran d'accueil ou à votre écran verrouillé et choisissez ce qu'il affiche : ce que votre partenaire a envie de faire ensuite, la petite question du jour, votre quiz, vos jours ensemble ou un compte à rebours vers une date spéciale.
+UN PREMIER LANCEMENT GUIDÉ
+Plutôt que d'expliquer Futari, l'app écrit désormais une page avec vous. Chaque étape éclaire la vraie commande sur le vrai écran et attend que vous l'ayez réellement fait. À la fin, vous avez écrit votre journée et ouvert une page avec quelqu'un.
 
-PARTAGER UNE PAGE
-Transformez une journée en une image que l'on a envie de garder. Inclure la page de votre partenaire, c'est toujours vous qui décidez.
+ESSAYEZ LE JOURNAL PARTAGÉ AVANT DE VOUS LIER
+Ce pour quoi Futari existe — écrire chacun de son côté, puis ouvrir ensemble — ne dépend plus de convaincre quelqu'un d'installer une app. Écrivez votre page face à une doublure, ouvrez les deux côte à côte et renvoyez une réponse. Rien de la démo n'est enregistré.
 
-DES MOTS PLUS DOUX, MAINTENANT PLUS FINS
-Quand ce que vous écrivez risque de blesser, Futari vous propose désormais trois façons plus douces de le dire, écrites à partir de vos propres mots.
+SE LIER EN UNE SEULE TOUCHE
+Les invitations sont devenues un lien. Votre partenaire le touche et vous êtes liés : plus de code à six caractères à dicter, plus de recherche dans les réglages.
 
-AUTRES CORRECTIONS
-- Les pages ouvertes depuis le calendrier affichent de nouveau la question et le quiz avec lesquels elles ont été écrites
-- Les prix s'affichent selon les usages de votre pays
-- Le clavier ne cache plus le bouton d'enregistrement, et enregistrer conserve exactement ce qui est à l'écran
+DES RAPPELS À L'HEURE QUE VOUS AVEZ CHOISIE
+Le rappel du soir arrive maintenant à votre heure, dans votre fuseau horaire ; il ignorait jusqu'ici l'heure choisie. Répondre seulement à la question du jour compte comme avoir écrit : plus de rappel pour une page déjà remplie.
+
+TROIS MOIS DE QUESTIONS
+Six fois plus de questions pour écrire, et trois fois plus de questions de couple. En écrivant seul, vous retombiez sur la même question en quinze jours.

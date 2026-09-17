@@ -1,13 +1,14 @@
-WIDGET'LAR
-Sayfanız hep elinizin altında. Futari'yi Ana Ekranınıza veya Kilit Ekranınıza ekleyin ve ne göstereceğini kendiniz seçin: partnerinizin sırada ne yapmak istediğini, günün küçük sorusunu, çift testinizi, birlikte geçirdiğiniz günleri ya da özel bir güne kalan geri sayımı.
+REHBERLİ İLK AÇILIŞ
+Futari artık kendini anlatmak yerine sizinle birlikte bir sayfa yazıyor. Her adım gerçek ekrandaki gerçek düğmeyi aydınlatıyor ve siz gerçekten yapana kadar bekliyor. Sonunda gününüzü yazmış ve biriyle birlikte bir sayfa açmış oluyorsunuz.
 
-BİR SAYFAYI PAYLAŞIN
-Bir günü saklamak isteyeceğiniz bir görsele dönüştürün. Partnerinizin tarafının da eklenip eklenmeyeceğine her zaman siz karar verirsiniz.
+EŞLEŞMEDEN ÖNCE ORTAK GÜNLÜĞÜ DENEYİN
+Futari'nin asıl var oluş nedeni — ayrı ayrı yazıp aynı anda açmak — artık birini uygulama yüklemeye ikna etmenize bağlı değil. Sayfanızı temsili bir eşin karşısında yazın, ikisini aynı anda açın ve bir yanıt gönderin. Denemeden hiçbir şey kaydedilmez.
 
-DAHA YUMUŞAK SÖZLER, ARTIK DAHA AKILLI
-Yazdığınız bir şey fazla sert gelebilecekse, Futari artık kendi sözlerinizden yola çıkarak bunu söylemenin üç daha nazik yolunu öneriyor.
+TEK DOKUNUŞLA EŞLEŞME
+Davetler artık bir bağlantı. Eşiniz dokunuyor ve eşleşiyorsunuz: okunacak altı karakterlik kod yok, ayarlarda arama yok.
 
-AYRICA DÜZELTİLDİ
-- Takvimden açtığınız sayfalar yeniden, yazıldıkları günün sorusunu ve çift testini gösteriyor
-- Fiyatlar ülkenizin yazım biçimiyle görünüyor
-- Klavye artık kaydet düğmesini kapatmıyor ve kaydetmek ekrandakini olduğu gibi saklıyor
+HATIRLATMALAR SEÇTİĞİNİZ SAATTE
+Akşam hatırlatması artık kendi saat diliminizde, seçtiğiniz saatte geliyor; daha önce seçtiğiniz saati yok sayıyordu. Yalnızca günün sorusunu yanıtlamak da yazmış sayılıyor, böylece zaten doldurduğunuz bir sayfa için dürtülmüyorsunuz.
+
+ÜÇ AYLIK SORU
+Tek başınıza yazarken çıkan soru sayısı altı katına, çift soruları üç katına çıktı. Eskiden tek başına yazarken aynı soruya iki haftada bir dönüyordunuz.

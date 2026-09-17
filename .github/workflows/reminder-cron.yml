@@ -1,0 +1,55 @@
+name: Daily reminder sweep (hourly)
+
+# Drives the web app's /api/cron/reminder, which Vercel can't.
+#
+# The reminder fires at the hour each user picked, in their own time zone, so
+# the endpoint has to be woken up every hour and works out for itself who is
+# actually due. Vercel Hobby refuses any cron that runs more than once a day —
+# and not quietly: it fails the entire deploy. GitHub Actions has no such limit
+# and is free on a public repo, so the schedule lives here.
+#
+# The job lives in the mobile repo because that is the repo that exists; the web
+# app is deployed from a local directory with no git remote of its own. Move it
+# if that ever changes.
+#
+# The endpoint is idempotent — it records reminderSentOn per user per local day,
+# so a retry, an overlapping run or a late trigger can't send the same nudge
+# twice. That also makes GitHub's schedule drift (runs can be delayed by ten
+# minutes or more under load) an annoyance rather than a correctness problem.
+
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch: {}
+
+# Two runs at once would both be harmless, but there is no reason to have them.
+concurrency:
+  group: reminder-cron
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Wake the reminder sweep
+        env:
+          # Same value as CRON_SECRET in the Vercel project. Add it under
+          # Settings → Secrets and variables → Actions. Without it every run
+          # gets a 401 and nobody is reminded of anything.
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET is not set in this repository's Actions secrets."
+            exit 1
+          fi
+          code=$(curl -sS -o body.json -w '%{http_code}' \
+            --max-time 120 \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://futari-nine.vercel.app/api/cron/reminder)
+          echo "HTTP $code"
+          cat body.json
+          echo
+          # A failure here means nobody got reminded this hour, which is exactly
+          # the kind of thing that should page rather than pass quietly.
+          [ "$code" = "200" ]

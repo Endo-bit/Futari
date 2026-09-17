@@ -1,13 +1,14 @@
-WIDGETS
-A página de vocês sempre por perto. Adicione o Futari à Tela de Início ou à Tela Bloqueada e escolha o que ele mostra: o que seu par quer fazer a seguir, a pequena pergunta do dia, o quiz de vocês, os dias juntos ou uma contagem regressiva para uma data especial.
+UM PRIMEIRO PASSO A PASSO GUIADO
+Em vez de explicar o Futari, agora ele escreve uma página com você. Cada passo acende o controle de verdade na tela de verdade e espera até você ter feito mesmo. No fim, você escreveu o seu dia e abriu uma página com alguém.
 
-COMPARTILHAR UMA PÁGINA
-Transforme um dia em uma imagem que dá vontade de guardar. Incluir a parte do seu par é sempre você quem decide.
+EXPERIMENTE O DIÁRIO COMPARTILHADO ANTES DE PAREAR
+Aquilo para o que o Futari existe — escrever separados e abrir juntos — não depende mais de convencer alguém a instalar um app. Escreva a sua página diante de uma parceira de faz de conta, abram as duas ao mesmo tempo e mande uma resposta de volta. Nada da demonstração é salvo.
 
-PALAVRAS MAIS SUAVES, AGORA MAIS ESPERTAS
-Quando o que você escreve pode soar duro demais, o Futari oferece agora três jeitos mais gentis de dizer, escritos a partir das suas próprias palavras.
+PAREAR COM UM TOQUE
+Os convites agora são um link. A sua pessoa toca e vocês estão pareados: sem código de seis caracteres para ditar, sem procurar nos ajustes.
 
-TAMBÉM CORRIGIDO
-- As páginas abertas pelo calendário voltam a mostrar a pergunta e o quiz com que foram escritas
-- Os preços aparecem no formato do seu país
-- O teclado não cobre mais o botão de salvar, e salvar mantém exatamente o que está na tela
+LEMBRETES NA HORA QUE VOCÊ ESCOLHEU
+O lembrete da noite chega no seu horário, no seu fuso; antes ele ignorava a hora escolhida. Responder só à pergunta do dia já conta como ter escrito, então ele não vai cobrar uma página que você já preencheu.
+
+TRÊS MESES DE PERGUNTAS
+Seis vezes mais perguntas para escrever e o triplo de perguntas de casal. Escrevendo sozinho, antes você voltava à mesma pergunta em duas semanas.
