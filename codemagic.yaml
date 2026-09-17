@@ -28,12 +28,19 @@ workflows:
         bundle_identifier: com.futarimobile.app
     integrations:
       app_store_connect: futari_asc_key
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: master
-          include: true
+    # No automatic trigger. .github/workflows/ios-build-submit.yml also builds
+    # and submits on push to master, and two pipelines racing to upload meant
+    # both computed the same CFBundleVersion and Apple rejected whichever
+    # finished second. This one now runs only when started by hand from the
+    # Codemagic UI. To make Codemagic the primary again, restore the block
+    # below and remove the push trigger from the GitHub workflow instead.
+    #
+    # triggering:
+    #   events:
+    #     - push
+    #   branch_patterns:
+    #     - pattern: master
+    #       include: true
     scripts:
       - name: Install npm dependencies
         script: npm ci
