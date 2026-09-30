@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { View } from "react-native";
 import { useFocusEffect } from "expo-router";
-import { useTutorial } from "../lib/tutorial";
+import { useTutorialRegistry } from "../lib/tutorial";
 
 /* Wrap anything the tour needs to point at.
 
@@ -10,7 +10,7 @@ import { useTutorial } from "../lib/tutorial";
    `collapsable={false}` is load-bearing: without it Android flattens the view out
    of the hierarchy and measureInWindow returns zeroes. */
 export default function TutorialTarget({ id, style, children }) {
-  const { registerTarget, onTargetLayout } = useTutorial();
+  const { registerTarget, onTargetLayout } = useTutorialRegistry();
 
   // Stable identity matters here: an inline arrow makes React detach and
   // reattach the ref on every render, and a measurement landing in that gap
@@ -27,35 +27,63 @@ export default function TutorialTarget({ id, style, children }) {
   );
 }
 
+/** Whether a tour is running — for the few things a screen does differently during one. */
+export function useTutorialActive() {
+  return useTutorialRegistry().active;
+}
+
 /**
  * Props to spread onto a screen's ScrollView so the tour can scroll a spotlit
- * control into view.
+ * control into view — and so nobody else can while it's running: the spotlight
+ * is cut where the control was measured, and a page dragged by hand slides out
+ * from under it.
+ *
+ * Each screen keeps its own offset and size here. They used to share one
+ * number, so the Journal step worked out its scroll from wherever Today had
+ * been left.
  *
  * Registration happens on focus rather than on mount: the tab navigator keeps
  * every screen alive, so whichever one mounted last would otherwise stay
  * registered while the user is looking at a different tab.
  */
 export function useTutorialScrollProps() {
-  const { registerScroll, noteScroll } = useTutorial();
-  const ref = useRef(null);
+  const { active, registerScroll, noteScroll } = useTutorialRegistry();
+  const state = useRef({ node: null, y: 0, contentH: 0, layoutH: 0 }).current;
 
   useFocusEffect(
     useCallback(() => {
-      registerScroll(ref.current);
-    }, [registerScroll])
+      registerScroll(state);
+    }, [registerScroll, state])
   );
 
   const setRef = useCallback(
     (node) => {
-      ref.current = node;
-      registerScroll(node);
+      state.node = node;
     },
-    [registerScroll]
+    [state]
   );
-  const onScroll = useCallback((e) => noteScroll(e.nativeEvent.contentOffset.y), [noteScroll]);
+  const onScroll = useCallback(
+    (e) => {
+      state.y = e.nativeEvent.contentOffset.y;
+      noteScroll(state);
+    },
+    [noteScroll, state]
+  );
+  const onLayout = useCallback(
+    (e) => {
+      state.layoutH = e.nativeEvent.layout.height;
+    },
+    [state]
+  );
+  const onContentSizeChange = useCallback(
+    (_w, h) => {
+      state.contentH = h;
+    },
+    [state]
+  );
 
   return useMemo(
-    () => ({ ref: setRef, onScroll, scrollEventThrottle: 16 }),
-    [setRef, onScroll]
+    () => ({ ref: setRef, onScroll, onLayout, onContentSizeChange, scrollEventThrottle: 16, scrollEnabled: !active }),
+    [setRef, onScroll, onLayout, onContentSizeChange, active]
   );
 }

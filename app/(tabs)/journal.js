@@ -8,8 +8,9 @@ import PairingPrompt from "../../components/PairingPrompt";
 import DateField from "../../components/DateField";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp, isoOf } from "../../lib/appState";
+import { yearLabel, yearMonthLabel } from "../../lib/format";
 import { sdTitle, sdLabel, sdCountdown } from "../../components/SdBanner";
-import TutorialTarget, { useTutorialScrollProps } from "../../components/TutorialTarget";
+import TutorialTarget, { useTutorialScrollProps, useTutorialActive } from "../../components/TutorialTarget";
 import { track } from "../../lib/analytics";
 import { EV } from "../../lib/events";
 
@@ -20,6 +21,7 @@ export default function JournalScreen() {
   const { t, lang, today, todayIso, me, mode, api, entries, specialDays, setSpecialDays, streak, showToast, spaceId, entitled } = useApp();
 
   const scrollProps = useTutorialScrollProps();
+  const touring = useTutorialActive();
 
   const [calY, setCalY] = useState(today.getFullYear());
   const [calM, setCalM] = useState(today.getMonth());
@@ -95,7 +97,7 @@ export default function JournalScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
       >
-      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: touring ? 260 : 40 }} keyboardShouldPersistTaps="handled">
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.journalTitle}</Text>
           <View style={styles.streakPill}>
@@ -123,9 +125,7 @@ export default function JournalScreen() {
                     <ChevronLeft size={19} color={C.inkSoft} />
                   </Pressable>
                   <Pressable onPress={() => setPickerOpen((p) => !p)} style={styles.calTitleBtn}>
-                    <Text style={styles.calTitle}>
-                      {lang === "ja" ? `${calY}年 ${t.months[calM]}` : `${t.months[calM]} ${calY}`}
-                    </Text>
+                    <Text style={styles.calTitle}>{yearMonthLabel(calY, calM, t, lang)}</Text>
                     <ChevronDown size={16} color={C.pinkText} />
                   </Pressable>
                   <Pressable onPress={() => stepMonth(1)}>
@@ -139,7 +139,7 @@ export default function JournalScreen() {
                       <Pressable onPress={() => setCalY((y) => y - 1)}>
                         <ChevronLeft size={17} color={C.inkSoft} />
                       </Pressable>
-                      <Text style={styles.yearLabel}>{lang === "ja" ? `${calY}年` : calY}</Text>
+                      <Text style={styles.yearLabel}>{yearLabel(calY, lang)}</Text>
                       <Pressable onPress={() => setCalY((y) => y + 1)}>
                         <ChevronRight size={17} color={C.inkSoft} />
                       </Pressable>

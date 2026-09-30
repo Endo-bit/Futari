@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { View, Text, Pressable, StyleSheet, Dimensions, ActivityIndicator, Keyboard, Platform } from "react-native";
-import { Heart, Sparkles, Bell, Send, ChevronRight } from "lucide-react-native";
+import { useState } from "react";
+import { View, Text, Pressable, StyleSheet, Dimensions, ActivityIndicator, Keyboard } from "react-native";
+import { Heart, Sparkles, Bell, Send, ChevronRight, Check } from "lucide-react-native";
 import { C, fonts, deepShadow } from "../lib/theme";
 import { useApp } from "../lib/appState";
-import { useTutorial } from "../lib/tutorial";
+import { useTutorial, RING, GAP, KEYBOARD_BAR, BUBBLE_FALLBACK_HEIGHT } from "../lib/tutorial";
 
 /* The guided tour, drawn.
 
@@ -13,23 +13,25 @@ import { useTutorial } from "../lib/tutorial";
    overlay with pointerEvents="none" couldn't block the rest of the screen, and
    one with "auto" would swallow the tap we're asking for. Four panels give both.
 
-   Two things learned from watching someone use it:
+   Things learned from watching someone use it:
 
    Every step shows the same button in the same place. Steps that wait for the
    user still advance on their own the moment they do the thing — but hiding the
    button while waiting read as the tour being broken, and "why is there no
    button on this one" is a worse problem than someone tapping past a step.
 
-   The bubble dodges the keyboard. Writing an answer is the first thing the tour
-   asks for, and the keyboard covered the button that came next. */
+   The bubble disappears while the keyboard is up. It used to climb on top of
+   the keyboard, which put it squarely over the box being typed into. Writing
+   needs the box and nothing else, so all that stays is a "Done" riding on the
+   keyboard — a multi-line box has no return key to close it, and the dimmed
+   page swallows the tap that would otherwise have done it.
 
-const BUBBLE_MARGIN = 14;
-/* Only used before the bubble has laid out once and told us how tall it really
-   is; after that the real height decides whether it goes above or below. */
-const BUBBLE_FALLBACK_HEIGHT = 190;
+   Nothing appears before it knows where it belongs. The bubble used to show in
+   the middle of the screen and then jump once the control had been measured. */
 
 function Panel({ style }) {
-  return <View pointerEvents="auto" style={[styles.dim, style]} />;
+  // Tapping the dark closes the keyboard, the way tapping the page normally would.
+  return <Pressable accessible={false} onPress={Keyboard.dismiss} style={[styles.dim, style]} />;
 }
 
 function CtaIcon({ cta }) {
@@ -42,53 +44,36 @@ function CtaIcon({ cta }) {
 
 export default function TutorialOverlay() {
   const { t } = useApp();
-  const { active, step, index, total, rect, busy, next, skip, startDemo, enableNotifications, startInvite, refreshRect } =
-    useTutorial();
-  const [keyboard, setKeyboard] = useState(0);
+  const {
+    active, step, index, total, rect, missing, keyboard, bounds, busy,
+    next, skip, startDemo, enableNotifications, startInvite, reportBubbleHeight,
+  } = useTutorial();
   const [bubbleH, setBubbleH] = useState(0);
-
-  useEffect(() => {
-    // willShow on iOS so the bubble moves with the keyboard rather than after it.
-    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
-    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
-    const shown = Keyboard.addListener(showEvent, (e) => setKeyboard(e.endCoordinates?.height || 0));
-    const hidden = Keyboard.addListener(hideEvent, () => setKeyboard(0));
-    return () => {
-      shown.remove();
-      hidden.remove();
-    };
-  }, []);
-
-  /* KeyboardAvoidingView shifts the page under us, so the hole we cut is in the
-     wrong place until we look again. */
-  useEffect(() => {
-    const timer = setTimeout(refreshRect, 260);
-    return () => clearTimeout(timer);
-  }, [keyboard, refreshRect]);
-
-  useEffect(() => setBubbleH(0), [step?.id]);
 
   if (!active || !step) return null;
 
-  const { width: screenW, height: screenH } = Dimensions.get("window");
+  const { width: screenW } = Dimensions.get("window");
+  const typing = keyboard > 0;
   const spotlit = !!step.target && !!rect;
+  // Still looking for the control: stay dark and say nothing yet.
+  const pending = !!step.target && !rect && !missing;
   const height = bubbleH || BUBBLE_FALLBACK_HEIGHT;
 
-  /* Above the keyboard whenever there is one — nothing else matters while it's
-     up, because everything below it is unreachable. Otherwise under the spotlit
-     control if it fits, above it if it doesn't, centred if there isn't one. */
-  let bubblePos;
-  if (keyboard > 0) {
-    bubblePos = { bottom: keyboard + BUBBLE_MARGIN };
-  } else if (spotlit) {
-    const below = rect.y + rect.height + BUBBLE_MARGIN;
-    bubblePos =
-      below + height < screenH - 24
-        ? { top: below }
-        : { bottom: Math.max(24, screenH - rect.y + BUBBLE_MARGIN) };
+  /* Beside the spotlit control, on the side the engine left room for; pinned to
+     an edge of the screen if the control is too tall to leave room on either;
+     centred when there is no control at all. */
+  let bubbleTop;
+  if (spotlit) {
+    const below = rect.y + rect.height + RING + GAP;
+    const above = rect.y - RING - GAP - height;
+    const fitsBelow = below + height <= bounds.bottom;
+    const fitsAbove = above >= bounds.top;
+    if (step.anchor === "end") bubbleTop = fitsAbove ? above : fitsBelow ? below : bounds.top;
+    else bubbleTop = fitsBelow ? below : fitsAbove ? above : bounds.bottom - height;
   } else {
-    bubblePos = { top: Math.max(24, screenH / 2 - height / 2) };
+    bubbleTop = Math.max(bounds.top, (bounds.top + bounds.bottom - height) / 2);
   }
+  const bubbleHidden = typing || pending || !bubbleH;
 
   const fill = (s) => (s || "").replaceAll("{n}", t.demoPartnerName);
   const title = fill(t[step.titleKey]);
@@ -106,37 +91,45 @@ export default function TutorialOverlay() {
   const secondaryLabel =
     step.cta === "notif" ? t.tutNotifLater : step.cta === "invite" ? t.tutInviteLater : null;
 
+  const hole = spotlit && {
+    top: rect.y - RING,
+    left: rect.x - RING,
+    width: rect.width + RING * 2,
+    height: rect.height + RING * 2,
+  };
+
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {spotlit ? (
         <>
-          <Panel style={{ top: 0, left: 0, right: 0, height: Math.max(0, rect.y - 6) }} />
-          <Panel style={{ top: rect.y + rect.height + 6, left: 0, right: 0, bottom: 0 }} />
-          <Panel style={{ top: rect.y - 6, left: 0, width: Math.max(0, rect.x - 6), height: rect.height + 12 }} />
+          <Panel style={{ top: 0, left: 0, right: 0, height: Math.max(0, hole.top) }} />
+          <Panel style={{ top: hole.top + hole.height, left: 0, right: 0, bottom: 0 }} />
+          <Panel style={{ top: hole.top, left: 0, width: Math.max(0, hole.left), height: hole.height }} />
           <Panel
             style={{
-              top: rect.y - 6,
-              left: rect.x + rect.width + 6,
-              width: Math.max(0, screenW - (rect.x + rect.width) - 6),
-              height: rect.height + 12,
+              top: hole.top,
+              left: hole.left + hole.width,
+              width: Math.max(0, screenW - hole.left - hole.width),
+              height: hole.height,
             }}
           />
-          <View
-            pointerEvents="none"
-            style={[
-              styles.ring,
-              { top: rect.y - 6, left: rect.x - 6, width: rect.width + 12, height: rect.height + 12 },
-            ]}
-          />
+          {/* A step that only shows something keeps its spotlight but not its
+              taps — a tap on the calendar would walk off to another page with
+              the tour still pointing at where the calendar had been. */}
+          <View pointerEvents={step.passive ? "auto" : "none"} style={[styles.ring, hole]} />
         </>
       ) : (
         <Panel style={StyleSheet.absoluteFillObject} />
       )}
 
       <View
-        style={[styles.bubble, bubblePos]}
-        pointerEvents="auto"
-        onLayout={(e) => setBubbleH(e.nativeEvent.layout.height)}
+        style={[styles.bubble, { top: bubbleTop }, bubbleHidden && styles.hidden]}
+        pointerEvents={bubbleHidden ? "none" : "auto"}
+        onLayout={(e) => {
+          const h = e.nativeEvent.layout.height;
+          setBubbleH(h);
+          reportBubbleHeight(h);
+        }}
       >
         <View style={styles.progressTrack}>
           <View style={[styles.progressFill, { width: `${((index + 1) / total) * 100}%` }]} />
@@ -167,6 +160,15 @@ export default function TutorialOverlay() {
           </Pressable>
         )}
       </View>
+
+      {typing && (
+        <View style={[styles.keyboardBar, { bottom: keyboard }]} pointerEvents="box-none">
+          <Pressable style={styles.doneBtn} onPress={Keyboard.dismiss} hitSlop={8}>
+            <Check size={16} color="#fff" strokeWidth={3} />
+            <Text style={styles.doneLabel}>{t.done}</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -193,6 +195,8 @@ const styles = StyleSheet.create({
     gap: 8,
     ...deepShadow,
   },
+  // Kept mounted so its height stays known; just not seen or touched.
+  hidden: { opacity: 0 },
   progressTrack: { height: 3, borderRadius: 999, backgroundColor: C.cardBorder, overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 999, backgroundColor: C.pinkDeep },
   title: { fontFamily: fonts.scriptSemiBold, fontSize: 26, lineHeight: 36, paddingRight: 8, color: C.ink },
@@ -213,4 +217,25 @@ const styles = StyleSheet.create({
   secondaryBtn: { alignItems: "center", paddingVertical: 6 },
   secondaryLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.inkSoft },
   skip: { fontFamily: fonts.bodySemiBold, fontSize: 12, color: C.inkSoft },
+  keyboardBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    height: KEYBOARD_BAR,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+  },
+  doneBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: C.pinkDeep,
+    borderRadius: 999,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    ...deepShadow,
+  },
+  doneLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: "#fff" },
 });

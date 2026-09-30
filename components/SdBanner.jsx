@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Heart, Cake, Star, PartyPopper } from "lucide-react-native";
 import { C, fonts, cardShadow } from "../lib/theme";
 import { useApp, fromIso } from "../lib/appState";
+import { monthDayLabel } from "../lib/format";
 
 const SD_ICONS = { heart: Heart, cake: Cake, star: Star };
 
@@ -9,9 +10,7 @@ export function sdTitle(sd, t) {
   return sd.key ? t[sd.key === "anniv" ? "sdAnniv" : "sdBday"] : sd.title;
 }
 export function sdLabel(dIso, lang, monthsShort) {
-  const d = fromIso(dIso);
-  if (lang === "ja") return `${d.getMonth() + 1}月${d.getDate()}日`;
-  return `${monthsShort[d.getMonth()]} ${d.getDate()}`;
+  return monthDayLabel(fromIso(dIso), { monthsShort }, lang);
 }
 export function sdMatches(sd, dIso) {
   return sd.date.slice(5) === dIso.slice(5);

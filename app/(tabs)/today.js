@@ -16,7 +16,7 @@ import MindEditor from "../../components/MindEditor";
 import ShareSheet from "../../components/ShareSheet";
 import FloatingHearts from "../../components/FloatingHearts";
 import { PairFieldCards } from "../../components/FieldCard";
-import TutorialTarget, { useTutorialScrollProps } from "../../components/TutorialTarget";
+import TutorialTarget, { useTutorialScrollProps, useTutorialActive } from "../../components/TutorialTarget";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp } from "../../lib/appState";
 import { dateLabel } from "../../lib/format";
@@ -51,6 +51,7 @@ export default function TodayScreen() {
   const { t, lang, today, todayIso, me, mode, api, getEntry, patchEntry, pairToday, refreshPairToday, partnerName, showToast, isDemo } =
     useApp();
   const scrollProps = useTutorialScrollProps();
+  const touring = useTutorialActive();
 
   const [editingField, setEditingField] = useState(null);
   const [mindOpen, setMindOpen] = useState(false);
@@ -59,15 +60,35 @@ export default function TodayScreen() {
   const [sendingResponse, setSendingResponse] = useState(false);
   const [hearts, setHearts] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const promptDraft = useRef(null);
-  useEffect(() => {
-    promptDraft.current = null;
-  }, [todayIso]);
 
   const e = getEntry(todayIso);
-  // Once a prompt has been shown/answered for today, keep showing that exact text —
-  // recomputing live would let a mode switch or language change silently swap it out
-  // from under an answer the user already wrote.
+
+  /* The prompt's answer box is uncontrolled, so it reads `defaultValue` once, when
+     it mounts. `promptShown` is what the box is showing; whenever the entry under
+     it becomes something the box didn't produce — the demo pair starting or
+     ending, a mode switch landing, midnight — the box is remounted. Left alone it
+     went on showing the other page's text, and the next blur or save wrote that
+     text into this page. */
+  const promptDraft = useRef(null);
+  const promptShown = useRef(e.promptAnswer || "");
+  const [promptBoxKey, setPromptBoxKey] = useState(0);
+  useEffect(() => {
+    if ((e.promptAnswer || "") === promptShown.current) return;
+    promptShown.current = e.promptAnswer || "";
+    promptDraft.current = null;
+    setPromptBoxKey((k) => k + 1);
+  }, [e.promptAnswer, todayIso, mode, isDemo]);
+
+  /* The full-screen editors sit above the tour and bring their own keyboard;
+     tell it, so it doesn't rearrange this page for a box that isn't on it. */
+  const covered = !!editingField || mindOpen || shareOpen;
+  useEffect(() => {
+    signalTutorial("cover", covered);
+  }, [covered]);
+  // Once a prompt has been shown/answered for today it is pinned to the entry —
+  // recomputing live would let a mode switch silently swap the question out from
+  // under an answer the user already wrote. promptFor shows the pinned question
+  // in the current language.
   const prompt = promptFor(t, mode, todayIso, e);
   const patchToday = (patch) => patchEntry(todayIso, { ...(e.prompt ? {} : { prompt }), ...patch });
   const wrote = !!(e.happy || e.mind || e.next || e.promptAnswer);
@@ -133,7 +154,9 @@ export default function TodayScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+      {/* Extra room at the bottom during the tour, so even the last control on
+          the page can be scrolled up clear of the bubble and the keyboard. */}
+      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: touring ? 260 : 40 }} keyboardShouldPersistTaps="handled">
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.todaysPage}</Text>
           <Text style={styles.dateLabel}>{dateLabel(today, t, lang)}</Text>
@@ -231,13 +254,16 @@ export default function TodayScreen() {
                     <Text style={styles.promptLabel}>{t.littlePrompt}</Text>
                     <Text style={styles.promptText}>{prompt}</Text>
                     <TextInput
-                      key={todayIso}
+                      key={promptBoxKey}
                       defaultValue={e.promptAnswer}
                       onChangeText={(text) => {
                         promptDraft.current = text;
+                        promptShown.current = text;
                       }}
-                      onBlur={(ev) => {
-                        if (ev.nativeEvent.text !== e.promptAnswer) patchToday({ promptAnswer: ev.nativeEvent.text });
+                      onBlur={() => {
+                        // From the draft, not the event: Android's blur carries no text.
+                        const text = promptDraft.current;
+                        if (text !== null && text !== e.promptAnswer) patchToday({ promptAnswer: text });
                       }}
                       placeholder={t.promptAnswerPh}
                       placeholderTextColor="#B3A794"

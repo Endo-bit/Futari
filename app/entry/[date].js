@@ -10,6 +10,7 @@ import { PairFieldCards } from "../../components/FieldCard";
 import ShareSheet from "../../components/ShareSheet";
 import { C, fonts } from "../../lib/theme";
 import { useApp, fromIso } from "../../lib/appState";
+import { pageTitle } from "../../lib/format";
 import { promptFor, quizFor } from "../../lib/dailyContent";
 
 function ReactionIcons({ ids }) {
@@ -44,7 +45,7 @@ export default function EntryDetail() {
 
   const e = getEntry(date);
   const d = fromIso(date);
-  const title = lang === "ja" ? `${d.getMonth() + 1}月${d.getDate()}日のページ` : `${t.pageOf} ${d.toLocaleDateString(lang)}`;
+  const title = pageTitle(d, t, lang);
   // Prefer the text stored on the entry itself — it's whatever was actually shown
   // the day this was written. Only fall back to recomputing for older entries saved
   // before that was tracked (or days nothing was ever written).
