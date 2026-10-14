@@ -14,7 +14,7 @@ export default function PairingPrompt() {
       </View>
       <Text style={styles.title}>{t.pairingTitle}</Text>
       <Text style={styles.sub}>{t.notPaired}</Text>
-      <Pressable style={styles.btn} onPress={() => router.push("/(tabs)/settings")}>
+      <Pressable style={styles.btn} onPress={() => router.push("/invite")}>
         <Text style={styles.btnLabel}>{t.goToPairing}</Text>
       </Pressable>
     </View>

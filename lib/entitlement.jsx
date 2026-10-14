@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Platform } from "react-native";
 import { useAuth } from "@clerk/expo";
+import { track } from "./analytics";
+import { EV } from "./events";
 
 const ENTITLEMENT_ID = "premium";
 
@@ -67,8 +69,15 @@ export function EntitlementProvider({ children }) {
         if (!cancelled) setIsLoading(false);
         return;
       }
+      let stage = "configure";
       try {
-        Purchases.configure({ apiKey });
+        /* Configure exactly once per launch. This effect re-runs on every
+           sign-in/out, and configuring again replaces the shared instance in the
+           middle of whatever the last one was doing — one account created on
+           2026-10-08 never reached RevenueCat at all, and swallowing every error
+           here meant there was no way to see why. */
+        if (!(await Purchases.isConfigured?.().catch(() => false))) Purchases.configure({ apiKey });
+        stage = userId ? "log_in" : "log_out";
         if (userId) {
           await Purchases.logIn(userId);
         } else {
@@ -77,10 +86,11 @@ export function EntitlementProvider({ children }) {
           // not to this app user, so logging in again restores it.
           await Purchases.logOut().catch(() => {});
         }
+        stage = "customer_info";
         const info = await Purchases.getCustomerInfo();
         if (!cancelled) applyCustomerInfo(info);
-      } catch {
-        // ignore — e.g. running without a real API key yet
+      } catch (err) {
+        track(EV.RC_ERROR, { stage, message: String(err?.message || err).slice(0, 200) });
       } finally {
         if (!cancelled) setIsLoading(false);
       }

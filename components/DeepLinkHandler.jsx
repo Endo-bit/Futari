@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLinkingURL } from "expo-linking";
+import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useAuth } from "@clerk/expo";
 import { useApp } from "../lib/appState";
@@ -22,6 +23,18 @@ export default function DeepLinkHandler() {
   // an error for something that actually worked. One attempt per code.
   const attempted = useRef(new Set());
   const busy = useRef(false);
+
+  /* A tapped notification that points somewhere — the "did your partner get the
+     invite?" nudge opens the invite screen rather than wherever the app was. */
+  const lastResponse = Notifications.useLastNotificationResponse();
+  const handledResponse = useRef(null);
+  useEffect(() => {
+    const id = lastResponse?.notification?.request?.identifier;
+    const target = lastResponse?.notification?.request?.content?.data?.url;
+    if (!id || handledResponse.current === id || !isSignedIn) return;
+    handledResponse.current = id;
+    if (target === "futari://invite") router.push("/invite");
+  }, [lastResponse, isSignedIn]); // eslint-disable-line
 
   // A link arrived while the app was running (or launched it).
   useEffect(() => {

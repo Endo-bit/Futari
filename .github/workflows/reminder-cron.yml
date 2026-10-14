@@ -53,3 +53,13 @@ jobs:
           # A failure here means nobody got reminded this hour, which is exactly
           # the kind of thing that should page rather than pass quietly.
           [ "$code" = "200" ]
+
+      - name: Wake the win-back email sweep
+        # Same secret, same idempotency (users/<uid>.winback). A no-op until
+        # RESEND_API_KEY and EMAIL_FROM are set in Vercel. Never fails the job:
+        # a mail-provider hiccup must not mark the reminder sweep as broken.
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" https://futari-nine.vercel.app/api/cron/winback || true
+          echo

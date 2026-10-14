@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import { C, fonts, cardShadow } from "../lib/theme";
+import { C, fonts } from "../lib/theme";
 
 export function FieldCard({ tag, tc, text }) {
   return (
@@ -28,7 +28,6 @@ const styles = StyleSheet.create({
     padding: 14,
     borderWidth: 1,
     borderColor: C.cardBorder,
-    ...cardShadow,
   },
   tag: { fontFamily: fonts.bodyExtraBold, fontSize: 10.5, letterSpacing: 1, marginBottom: 5 },
   text: { fontFamily: fonts.bodyRegular, fontSize: 13.5, lineHeight: 20, color: C.ink },

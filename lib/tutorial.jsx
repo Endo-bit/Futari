@@ -350,15 +350,9 @@ export function TutorialProvider({ children }) {
 
   const skip = useCallback(() => finish("skipped"), [finish]);
 
-  /* First run only, and not until there is an account and a `me` to drive —
-     the tour navigates between tabs, and firing it at the sign-in screen would
-     throw a brand-new visitor into a part of the app they can't be in yet. */
-  useEffect(() => {
-    if (!app.me?.userId || active) return;
-    AsyncStorage.getItem(SEEN_KEY).then((seen) => {
-      if (!seen) start(false);
-    });
-  }, [app.me?.userId]); // eslint-disable-line
+  /* No longer started on first run: new users get the onboarding in
+     app/index.js before they sign up, and this tour is now only the walkthrough
+     replayed from Settings ("How Futari works"). */
 
   // "How Futari works" in Settings, relayed over the bus.
   useEffect(

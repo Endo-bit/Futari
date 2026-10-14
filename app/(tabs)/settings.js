@@ -17,7 +17,8 @@ import { LANGS, T } from "../../lib/i18n";
 import { buildExportText } from "../../lib/exportText";
 import { WIDGET_MODES, subscribeWidgetStatus } from "../../lib/widgets";
 import { sdTitle } from "../../components/SdBanner";
-import { registerForPushNotifications } from "../../lib/pushNotifications";
+import { registerForPushNotifications, pushTokenIfAllowed } from "../../lib/pushNotifications";
+import { UserButton } from "@clerk/expo/native";
 import {
   DEFAULT_REMINDER_TIME,
   changeReminderTime,
@@ -71,8 +72,9 @@ export default function SettingsScreen() {
       // Expo push token onto the server once the user grants permission — do that
       // proactively here instead of waiting for a toggle tap that may never happen
       // (the switch already reads as "on" so there's nothing to tap).
+      // Never prompts: opening Settings is not a request for permission.
       if (wantsRevealNotif && !p.hasSubscription) {
-        const token = await registerForPushNotifications().catch(() => null);
+        const token = await pushTokenIfAllowed();
         if (token) {
           await api.saveExpoPushToken(token).catch(() => {});
           setPushSubscribed(true);
@@ -98,7 +100,7 @@ export default function SettingsScreen() {
       setReminderOn(false);
       return;
     }
-    const ok = await enableReminder({ api, t, time: reminderTime, revealNotifOn, source: "settings" });
+    const ok = await enableReminder({ api, t, time: reminderTime, revealNotifOn, source: "settings", paired: !!me?.pairId });
     if (!ok) {
       showToast(t.pushDenied, "info");
       return;
@@ -110,11 +112,11 @@ export default function SettingsScreen() {
     const next = !revealNotifOn;
     if (next && !(await ensurePushRegistered())) return;
     setRevealNotifOn(next);
-    await api.saveNotificationPrefs({ reminderOn, revealNotifOn: next, reminderTime });
+    await api.saveNotificationPrefs({ reminderOn, reminderLocal: true, revealNotifOn: next, reminderTime });
   };
   const handleReminderTimeChange = async (time) => {
     setReminderTime(time);
-    await changeReminderTime({ api, t, time, on: reminderOn, revealNotifOn });
+    await changeReminderTime({ api, t, time, on: reminderOn, revealNotifOn, paired: !!me?.pairId });
   };
 
   // Surfaced under the widget picker: a blank widget otherwise gives no way to
@@ -235,7 +237,24 @@ export default function SettingsScreen() {
     }
   };
 
+  /* One question on the way to Apple's subscription page. Apple never tells us
+     why someone cancels, and the one paying user so far cancelled sixteen
+     minutes after buying — skipping is always one tap. */
   const handleManageSubscription = () => {
+    const open = () => openSubscriptions();
+    Alert.alert(t.cancelAskTitle, t.cancelAskBody, [
+      ...t.cancelReasons.map((reason, i) => ({
+        text: reason,
+        onPress: () => {
+          track(EV.CANCEL_REASON, { reason_index: i, reason: T.en.cancelReasons[i] });
+          open();
+        },
+      })),
+      { text: t.cancelSkip, style: "cancel", onPress: open },
+    ]);
+  };
+
+  const openSubscriptions = () => {
     const url =
       Platform.OS === "ios"
         ? "itms-apps://apps.apple.com/account/subscriptions"
@@ -268,6 +287,7 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.settingsTitle}</Text>
+          <UserButton />
         </View>
 
         <View style={[styles.section, { gap: 14 }]}>
@@ -486,7 +506,7 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerRow: { paddingHorizontal: 22, paddingTop: 18, paddingBottom: 6 },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 22, paddingTop: 18, paddingBottom: 6 },
   h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, paddingRight: 10, color: C.ink },
   section: { paddingHorizontal: 18, paddingTop: 8 },
   card: { backgroundColor: C.card, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },

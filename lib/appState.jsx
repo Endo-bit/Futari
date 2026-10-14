@@ -8,7 +8,9 @@ import { useApi } from "./api";
 import { useEntitlement } from "./entitlement";
 import { useDemoPair } from "./demoPair";
 import { signalTutorial } from "./tutorialBus";
-import { resyncReminder } from "./reminder";
+import { armReminders, syncNotificationsToServer } from "./reminder";
+import { cancelInviteNudge } from "./pushNotifications";
+import { takeOnboardingAnswer } from "./onboarding";
 import { identify, setSuperProperties, track, resetAnalytics } from "./analytics";
 import { EV } from "./events";
 import {
@@ -108,14 +110,19 @@ export function AppStateProvider({ children }) {
     setSuperProperties(props);
   }, [me?.userId, me?.pairId, me?.premiumActive, me?.trialActive, me?.trialAvailable, lang]); // eslint-disable-line
 
-  /* Re-arm the daily reminder on launch. iOS keeps scheduled notifications
-     across restarts, but not across a reinstall or a restore to a new phone, and
-     this is also where the server learns the device's current time zone — the
-     cron needs it to push at the hour the user actually chose. */
+  /* Once per account per launch: tell the server this device's time zone and
+     reminder state, and hand it a push token if notifications are allowed —
+     onboarding asks before there is an account, so this is the first moment
+     either can be sent. */
   useEffect(() => {
     if (!me?.userId) return;
-    resyncReminder({ api, t }).catch(() => {});
+    syncNotificationsToServer({ api }).catch(() => {});
   }, [me?.userId]); // eslint-disable-line
+
+  /* Pairing done: the "did your partner get the link?" nudge has no point. */
+  useEffect(() => {
+    if (me?.pairId) cancelInviteNudge().catch(() => {});
+  }, [me?.pairId]);
 
   const setMode = useCallback((m) => setModeState(m), []);
   const spaceId = me ? (mode === "pair" && me.pairSpaceId ? me.pairSpaceId : me.personalSpaceId) : null;
@@ -211,6 +218,36 @@ export function AppStateProvider({ children }) {
     }
     return n;
   }, [entries, today]); // eslint-disable-line
+
+  /* The answer written during onboarding, before there was an account, becomes
+     the first line of today's page. Never over an answer already there. */
+  useEffect(() => {
+    if (!me?.personalSpaceId) return;
+    let cancelled = false;
+    (async () => {
+      const carried = await takeOnboardingAnswer(todayIso);
+      if (!carried) return;
+      const existing = await api.listMyEntries(me.personalSpaceId).catch(() => ({}));
+      if (existing[todayIso]?.promptAnswer) return;
+      const patch = { promptAnswer: carried.answer, prompt: carried.prompt };
+      await api.saveEntry(me.personalSpaceId, todayIso, patch).catch(() => {});
+      track(EV.ONBOARDING_ANSWER_CARRIED);
+      if (!cancelled && spaceId === me.personalSpaceId) {
+        setEntries((es) => ({ ...es, [todayIso]: { ...(es[todayIso] || EMPTY), ...patch } }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [me?.personalSpaceId]); // eslint-disable-line
+
+  /* The reminder series carries each day's question and skips a day already
+     written, so it is re-armed whenever either of those could have changed. */
+  const wroteTodayFlag = wroteToday();
+  useEffect(() => {
+    if (!me?.userId) return;
+    armReminders({ t, paired: !!me.pairId, skipToday: wroteTodayFlag }).catch(() => {});
+  }, [me?.userId, me?.pairId, lang, todayIso, wroteTodayFlag]); // eslint-disable-line
 
   /* Home/Lock Screen widget. The chosen mode lives on the device (it's a per-phone
      preference, not per-account), and every input the widget can show is pushed

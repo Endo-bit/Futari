@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { Heart, PenLine, Check } from "lucide-react-native";
+import { Heart, PenLine, Check, ChevronRight } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import ModeToggle from "../../components/ModeToggle";
 import SaveButton from "../../components/SaveButton";
@@ -98,6 +98,12 @@ export default function HomeScreen() {
       <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.tabHome}</Text>
+          <View style={styles.streakPill}>
+            <Heart size={13} color={C.pinkText} fill={C.pinkText} />
+            <Text style={styles.streakPillText}>
+              {streak} {t.streak}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -105,6 +111,43 @@ export default function HomeScreen() {
         </View>
 
         <View style={[styles.section, { gap: 14 }]}>
+          {!!me && !me.pairId && (
+            <Pressable onPress={() => router.push("/invite")} style={styles.inviteCard}>
+              <View style={styles.inviteIcon}>
+                <Heart size={16} color="#fff" fill="#fff" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.inviteTitle}>{t.homeInviteTitle}</Text>
+                <Text style={styles.inviteBody}>{t.homeInviteBody}</Text>
+              </View>
+              <ChevronRight size={18} color={C.pinkText} />
+            </Pressable>
+          )}
+
+          <View style={styles.promptCard}>
+            <Text style={styles.promptLabel}>{t.littlePrompt}</Text>
+            <Text style={styles.promptText}>{prompt}</Text>
+            {showPromptAnswers && (
+              <View style={styles.promptAnswers}>
+                {!!myPromptAnswer && (
+                  <Text style={styles.promptAnswerLine}>
+                    <Text style={styles.promptAnswerWho}>{myName}: </Text>
+                    {myPromptAnswer}
+                  </Text>
+                )}
+                {!!partnerPromptAnswer && (
+                  <Text style={styles.promptAnswerLine}>
+                    <Text style={styles.promptAnswerWho}>{partnerName}: </Text>
+                    {partnerPromptAnswer}
+                  </Text>
+                )}
+              </View>
+            )}
+            <View style={{ marginTop: 14 }}>
+              <SaveButton onPress={() => router.push("/(tabs)/today")} label={t.homeWriteCta} icon={<PenLine size={16} color="#fff" />} />
+            </View>
+          </View>
+
           {showCouple && (
             <View style={styles.togetherCard}>
               <Pressable style={styles.editBtn} onPress={() => setStartDateFormOpen((o) => !o)}>
@@ -134,13 +177,6 @@ export default function HomeScreen() {
               )}
             </View>
           )}
-
-          <View style={styles.streakCard}>
-            <Heart size={16} color={C.green} fill={C.green} />
-            <Text style={styles.streakText}>
-              {streak} {t.streak}
-            </Text>
-          </View>
 
           {showCouple && (
             <View style={styles.quizCard}>
@@ -234,29 +270,6 @@ export default function HomeScreen() {
             </>
           )}
 
-          <View style={styles.promptCard}>
-            <Text style={styles.promptLabel}>{t.littlePrompt}</Text>
-            <Text style={styles.promptText}>{prompt}</Text>
-            {showPromptAnswers && (
-              <View style={styles.promptAnswers}>
-                {!!myPromptAnswer && (
-                  <Text style={styles.promptAnswerLine}>
-                    <Text style={styles.promptAnswerWho}>{myName}: </Text>
-                    {myPromptAnswer}
-                  </Text>
-                )}
-                {!!partnerPromptAnswer && (
-                  <Text style={styles.promptAnswerLine}>
-                    <Text style={styles.promptAnswerWho}>{partnerName}: </Text>
-                    {partnerPromptAnswer}
-                  </Text>
-                )}
-              </View>
-            )}
-            <View style={{ marginTop: 14 }}>
-              <SaveButton onPress={() => router.push("/(tabs)/today")} label={t.homeWriteCta} icon={<PenLine size={16} color="#fff" />} />
-            </View>
-          </View>
         </View>
       </ScrollView>
     </PaperBg>
@@ -264,7 +277,13 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  headerRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6 },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6 },
+  streakPill: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: C.pink, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 11 },
+  streakPillText: { fontFamily: fonts.bodyExtraBold, fontSize: 12.5, color: C.pinkText },
+  inviteCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.pink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16 },
+  inviteIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.pinkDeep, alignItems: "center", justifyContent: "center" },
+  inviteTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
+  inviteBody: { fontFamily: fonts.bodyRegular, fontSize: 12.5, lineHeight: 18, color: C.inkSoft, marginTop: 1 },
   h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, paddingRight: 10, color: C.ink },
   section: { paddingHorizontal: 18, paddingTop: 10 },
   togetherCard: {
@@ -283,8 +302,6 @@ const styles = StyleSheet.create({
   setDateBtn: { marginTop: 6, backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 18 },
   setDateLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: "#fff" },
   startDateForm: { marginTop: 16, backgroundColor: "#fff", borderRadius: 16, padding: 12, width: "100%" },
-  streakCard: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.card, borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
-  streakText: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: C.ink },
   quizCard: { backgroundColor: C.pink, borderRadius: 20, padding: 18 },
   quizQ: { fontFamily: fonts.scriptSemiBold, fontSize: 21, color: C.ink, lineHeight: 32, paddingVertical: 3, paddingRight: 6, marginBottom: 10 },
   quizRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
@@ -292,11 +309,11 @@ const styles = StyleSheet.create({
   quizBtnSel: { backgroundColor: C.pinkDeep },
   quizBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 13 },
   quizAnswer: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: "#A9798C" },
-  textCard: { backgroundColor: C.card, borderRadius: 20, padding: 18, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
+  textCard: { backgroundColor: C.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.cardBorder },
   textCardLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.inkSoft, marginBottom: 8 },
-  textarea: { minHeight: 50, backgroundColor: "#fff", borderWidth: 1, borderColor: C.cardBorder, borderRadius: 12, padding: 12, fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.ink, textAlignVertical: "top" },
-  promptCard: { backgroundColor: C.greenSoft, borderRadius: 20, padding: 18 },
-  promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.inkSoft, marginBottom: 4 },
+  textarea: { minHeight: 44, backgroundColor: C.paper, borderRadius: 10, padding: 11, fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.ink, textAlignVertical: "top" },
+  promptCard: { backgroundColor: C.card, borderRadius: 18, padding: 18, borderWidth: 1, borderColor: C.cardBorder },
+  promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.pinkText, marginBottom: 4 },
   promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 24, color: C.ink, lineHeight: 36, paddingVertical: 3, paddingRight: 7 },
   promptAnswers: { marginTop: 12, gap: 6 },
   promptAnswerLine: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.ink, lineHeight: 19 },

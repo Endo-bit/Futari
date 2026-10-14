@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Smile, Meh, Moon, Heart } from "lucide-react-native";
-import { C, fonts, cardShadow } from "../lib/theme";
+import { C, fonts } from "../lib/theme";
 
 const MOODS = [
   { id: "smile", Icon: Smile },
@@ -33,6 +33,6 @@ const styles = StyleSheet.create({
   wrap: { alignItems: "center", marginTop: 4 },
   label: { fontFamily: fonts.bodySemiBold, fontSize: 12, color: C.inkSoft, marginBottom: 8 },
   row: { flexDirection: "row", gap: 14 },
-  btn: { width: 46, height: 46, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: C.card, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
-  btnSel: { backgroundColor: C.pink, borderWidth: 2.5, borderColor: C.pinkDeep },
+  btn: { width: 46, height: 46, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: C.card, borderWidth: 1, borderColor: C.cardBorder },
+  btnSel: { backgroundColor: C.pink, borderWidth: 2, borderColor: C.pinkDeep },
 });

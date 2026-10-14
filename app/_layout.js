@@ -79,6 +79,7 @@ export default function RootLayout() {
               <View style={{ flex: 1 }}>
                 <Stack screenOptions={{ headerShown: false }}>
                   <Stack.Screen name="index" />
+                  <Stack.Screen name="invite" />
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="entry/[date]" options={{ presentation: "modal" }} />
                   <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
