@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   View, Text, Image, Pressable, Modal, TextInput, ScrollView, Keyboard,
-  KeyboardAvoidingView, Platform, Animated, Easing, StyleSheet,
+  Platform, Animated, Easing, StyleSheet,
 } from "react-native";
 import { Redirect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -35,6 +35,21 @@ import { EV } from "../lib/events";
    The full walkthrough over the real app still exists, replayed from Settings. */
 
 const STEPS = ["hello", "write", "reveal", "notify", "account"];
+
+/** The keyboard's height while it's up, 0 otherwise. The write step lays itself
+    out against this directly: a KeyboardAvoidingView around a ScrollView left
+    the answer box scrolled out of sight behind the button once the keyboard
+    opened, which read as the box vanishing the moment you tried to type. */
+function useKeyboardHeight() {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const ios = Platform.OS === "ios";
+    const show = Keyboard.addListener(ios ? "keyboardWillShow" : "keyboardDidShow", (e) => setHeight(e.endCoordinates?.height || 0));
+    const hide = Keyboard.addListener(ios ? "keyboardWillHide" : "keyboardDidHide", () => setHeight(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+  return height;
+}
 
 function Dots({ index }) {
   return (
@@ -84,6 +99,7 @@ export default function Onboarding() {
   const { isSignedIn, isLoaded } = useAuth();
   const { t } = useApp();
   const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardHeight();
 
   const [step, setStep] = useState(0);
   const [answer, setAnswer] = useState("");
@@ -93,6 +109,7 @@ export default function Onboarding() {
   const [inviteSeen, setInviteSeen] = useState(null);
 
   const fade = useRef(new Animated.Value(1)).current;
+  const inputRef = useRef(null);
   const partnerFade = useRef(new Animated.Value(0)).current;
 
   const id = STEPS[step];
@@ -127,7 +144,9 @@ export default function Onboarding() {
     Keyboard.dismiss();
     Animated.timing(fade, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => {
       setStep(Math.min(next, STEPS.length - 1));
-      Animated.timing(fade, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+      Animated.timing(fade, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }).start(() => {
+        if (STEPS[next] === "write") inputRef.current?.focus();
+      });
     });
   }
 
@@ -188,23 +207,25 @@ export default function Onboarding() {
     );
     footer = <PrimaryButton label={t.obHelloCta} onPress={() => goTo(1)} />;
   } else if (id === "write") {
+    const typing = keyboard > 0;
     body = (
-      <View style={{ gap: 14 }}>
-        <Text style={styles.kicker}>{t.obWriteLabel}</Text>
-        <Text style={styles.prompt}>{t.obPrompt}</Text>
-        <View style={styles.paper}>
+      <View style={{ flex: 1, gap: typing ? 10 : 14 }}>
+        {!typing && <Text style={styles.kicker}>{t.obWriteLabel}</Text>}
+        <Text style={typing ? styles.promptTyping : styles.prompt}>{t.obPrompt}</Text>
+        <Pressable style={[styles.paper, typing && { flex: 1 }]} onPress={() => inputRef.current?.focus()}>
           <TextInput
+            ref={inputRef}
             value={answer}
             onChangeText={setAnswer}
             placeholder={t.obWritePh}
             placeholderTextColor="#B3A794"
             multiline
-            autoFocus
             maxLength={280}
-            style={styles.input}
+            scrollEnabled
+            style={[styles.input, typing && { flex: 1, minHeight: 60 }]}
           />
-        </View>
-        <Text style={styles.hint}>{t.obWriteHint.replaceAll("{n}", partner)}</Text>
+        </Pressable>
+        {!typing && <Text style={styles.hint}>{t.obWriteHint.replaceAll("{n}", partner)}</Text>}
       </View>
     );
     footer = <PrimaryButton label={t.obWriteCta} onPress={seal} disabled={!answer.trim()} icon={<Lock size={16} color={answer.trim() ? "#fff" : C.inkSoft} />} />;
@@ -286,17 +307,21 @@ export default function Onboarding() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <View style={{ flex: 1, paddingBottom: keyboard }}>
         <Animated.View style={{ flex: 1, opacity: fade }}>
-          <ScrollView
-            contentContainerStyle={[styles.content, id === "hello" || id === "notify" ? { justifyContent: "center" } : null]}
-            keyboardShouldPersistTaps="handled"
-          >
-            {body}
-          </ScrollView>
-          <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>{footer}</View>
+          {id === "write" ? (
+            <View style={[styles.content, { flex: 1, paddingTop: keyboard ? 8 : 20, paddingBottom: 12 }]}>{body}</View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={[styles.content, id === "hello" || id === "notify" ? { justifyContent: "center" } : null]}
+              keyboardShouldPersistTaps="handled"
+            >
+              {body}
+            </ScrollView>
+          )}
+          <View style={[styles.footer, { paddingBottom: keyboard ? 10 : Math.max(insets.bottom, 16) }]}>{footer}</View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </View>
 
       <FloatingHearts active={revealed && id === "reveal"} />
 
@@ -331,6 +356,7 @@ const styles = StyleSheet.create({
   bodyLeft: { fontFamily: fonts.bodyRegular, fontSize: 15, lineHeight: 23, color: C.inkSoft, textAlign: "center" },
   kicker: { fontFamily: fonts.bodyExtraBold, fontSize: 11.5, letterSpacing: 1.4, color: C.pinkText, marginTop: 12 },
   prompt: { fontFamily: fonts.scriptSemiBold, fontSize: 32, lineHeight: 44, paddingRight: 10, color: C.ink },
+  promptTyping: { fontFamily: fonts.scriptSemiBold, fontSize: 24, lineHeight: 34, paddingRight: 10, color: C.ink },
   promptSmall: { fontFamily: fonts.scriptSemiBold, fontSize: 22, lineHeight: 32, paddingRight: 8, color: C.ink, marginTop: 6 },
   paper: { backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: "rgba(120,100,70,0.12)", paddingHorizontal: 16, paddingVertical: 12 },
   input: { minHeight: 110, fontFamily: fonts.bodyRegular, fontSize: 16.5, lineHeight: 25, color: C.ink, textAlignVertical: "top" },
