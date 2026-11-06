@@ -3,7 +3,7 @@ import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet, Platf
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, Redirect } from "expo-router";
 import { useAuth } from "@clerk/expo";
-import { X, Heart, Check, CalendarDays, Download } from "lucide-react-native";
+import { X, Heart, Check, CalendarDays, Download, Users } from "lucide-react-native";
 import PaperBg from "../components/PaperBg";
 import SaveButton from "../components/SaveButton";
 import { C, fonts, cardShadow } from "../lib/theme";
@@ -34,7 +34,7 @@ function FeatureRow({ icon, label }) {
 export default function Paywall() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { t, lang, showToast, trialActive, trialDaysLeft } = useApp();
+  const { t, lang, showToast, trialActive, trialDaysLeft, waitingPages, partnerName } = useApp();
   const { isAvailable, refresh } = useEntitlement();
   const insets = useSafeAreaInsets();
   const Purchases = loadPurchases();
@@ -151,8 +151,18 @@ export default function Paywall() {
           {trialActive ? t.trialPaywallSub.replace("{n}", String(trialDaysLeft)) : t.paywallSub}
         </Text>
 
+        {/* On the free plan, the pages already waiting are the reason to be here. */}
+        {waitingPages > 0 && (
+          <Text style={styles.waiting}>
+            {(waitingPages === 1 ? t.waitingPagesOne : t.waitingPagesMany)
+              .replace("{n}", partnerName)
+              .replace("{c}", String(waitingPages))}
+          </Text>
+        )}
+
         <View style={styles.features}>
-          <FeatureRow icon={<Heart size={16} color={C.pinkText} />} label={t.paywallFeaturePairing} />
+          <FeatureRow icon={<Heart size={16} color={C.pinkText} />} label={t.paywallFeatureEveryDay} />
+          <FeatureRow icon={<Users size={16} color={C.pinkText} />} label={t.paywallOneForTwo} />
           <FeatureRow icon={<CalendarDays size={16} color={C.pinkText} />} label={t.paywallFeatureSpecialDays} />
           <FeatureRow icon={<Download size={16} color={C.pinkText} />} label={t.paywallFeatureExport} />
         </View>
@@ -231,6 +241,7 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.scriptBold, fontSize: 32, lineHeight: 47, paddingVertical: 3, paddingRight: 9, color: C.ink, marginBottom: 6 },
   sub: { fontFamily: fonts.bodyRegular, fontSize: 14, color: C.inkSoft, textAlign: "center", lineHeight: 21, marginBottom: 22, maxWidth: 300 },
   features: { width: "100%", gap: 12, marginBottom: 22 },
+  waiting: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.pinkText, textAlign: "center", marginTop: -8, marginBottom: 18 },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
   featureIcon: { width: 30, height: 30, borderRadius: 999, backgroundColor: C.pink, alignItems: "center", justifyContent: "center" },
   featureLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.ink, flex: 1 },

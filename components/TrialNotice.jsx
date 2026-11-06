@@ -13,12 +13,13 @@ import { EV } from "../lib/events";
 
    Shown at most once per milestone day — the marker is keyed by day index, so
    reinstalling or reopening the app does not re-show a notice the user already
-   answered, and a user who skips day 2 still sees day 4.
+   answered, and a user who skips day 3 still sees day 6.
 
    Declining is a real choice, not a delay: "keep using the free version" simply
    closes it, and nothing here blocks the app. */
 const SEEN_KEY = "futari_trial_notice_seen";
-const NOTICE_DAYS = [2, 4];
+// The trial is seven days: once mid-week, and once with two days to go.
+const NOTICE_DAYS = [3, 6];
 
 export default function TrialNotice() {
   const router = useRouter();

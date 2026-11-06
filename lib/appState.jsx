@@ -102,13 +102,14 @@ export function AppStateProvider({ children }) {
     const props = {
       paired: !!me.pairId,
       premium: !!me.premiumActive,
+      plan: me.plan || null,
       trial_active: !!me.trialActive,
       trial_available: !!me.trialAvailable,
       lang,
     };
     identify(me.userId, props);
     setSuperProperties(props);
-  }, [me?.userId, me?.pairId, me?.premiumActive, me?.trialActive, me?.trialAvailable, lang]); // eslint-disable-line
+  }, [me?.userId, me?.pairId, me?.premiumActive, me?.plan, me?.trialActive, me?.trialAvailable, lang]); // eslint-disable-line
 
   /* Once per account per launch: tell the server this device's time zone and
      reminder state, and hand it a push token if notifications are allowed —
@@ -313,10 +314,17 @@ export function AppStateProvider({ children }) {
   // me.premiumActive is what RevenueCat's webhook last told the server. Trust
   // either source: the device may know about a purchase before the webhook lands,
   // and the server still knows after a sign-out clears the local cache.
-  const entitled = isPremium || !!me?.premiumActive || trialActive;
-  // Pairing is reachable while entitled, and also before a first-ever trial —
-  // that is what lets a new couple pair without entering payment details.
-  const canPair = entitled || trialAvailable;
+  const entitled = isPremium || !!me?.premiumActive || trialActive || me?.plan === "trial";
+  // Anyone may pair: before a first-ever trial it starts one, and after it the
+  // pair simply lands on the free plan (the server allows this from 1.0.6).
+  const canPair = true;
+
+  /* The pair's plan, from the server: "premium" (either partner pays), "trial"
+     or "free" — on the free plan both keep writing and may open one page a week.
+     A purchase this device just made counts before the webhook reaches the server. */
+  const plan = !me?.pairId ? null : isPremium ? "premium" : me?.plan || null;
+  const freeRevealsLeft = plan === "free" ? me?.freeRevealsLeft ?? 0 : null;
+  const waitingPages = plan === "free" ? me?.waitingPages || 0 : 0;
 
   /* Releasing a lapsed pairing is the SERVER's job (the RevenueCat webhook, plus
      the daily cron that also enforces trial expiry). It used to be done here, and
@@ -336,6 +344,7 @@ export function AppStateProvider({ children }) {
     specialDays, setSpecialDays,
     wroteToday, streak,
     isPremium, entitled, canPair,
+    plan, freeRevealsLeft, waitingPages,
     trialActive, trialAvailable, trialDaysLeft, trialDayIndex, trialEndsAt,
     widgetMode, chooseWidgetMode, widgetSpecialDayId, chooseWidgetSpecialDay,
     toast, showToast,

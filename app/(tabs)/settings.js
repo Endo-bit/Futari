@@ -46,7 +46,7 @@ export default function SettingsScreen() {
   const {
     t, lang, setLang, me, setMe, refreshMe, partnerName, api, showToast, openTutorial, todayIso,
     specialDays, widgetMode, chooseWidgetMode, widgetSpecialDayId, chooseWidgetSpecialDay,
-    isPremium, entitled, canPair, trialActive, trialDaysLeft,
+    isPremium, entitled, canPair, trialActive, trialDaysLeft, trialAvailable,
   } = useApp();
 
   const { invite: inviteParam } = useLocalSearchParams();
@@ -317,23 +317,19 @@ export default function SettingsScreen() {
                 </View>
                 <Text style={styles.notPaired}>{t.notPaired}</Text>
 
-                {canPair ? (
-                  <View style={styles.premiumNote}>
-                    <Sparkles size={13} color={C.pinkText} />
-                    <Text style={styles.premiumNoteText}>
-                      {trialActive
-                        ? t.trialDaysLeftNote.replace("{n}", String(trialDaysLeft))
-                        : entitled
-                        ? t.paywallFeaturePairing
-                        : t.trialFreeNote.replace("{n}", String(t.trialDays))}
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={styles.premiumNote}>
-                    <Lock size={13} color={C.pinkText} />
-                    <Text style={styles.premiumNoteText}>{t.trialEndedNote}</Text>
-                  </View>
-                )}
+                {/* Pairing is always open; what it comes with depends on where the trial stands. */}
+                <View style={styles.premiumNote}>
+                  {entitled || trialAvailable ? <Sparkles size={13} color={C.pinkText} /> : <Lock size={13} color={C.pinkText} />}
+                  <Text style={styles.premiumNoteText}>
+                    {trialActive
+                      ? t.trialDaysLeftNote.replace("{n}", String(trialDaysLeft))
+                      : entitled
+                      ? t.paywallFeaturePairing
+                      : trialAvailable
+                      ? t.trialFreeNote.replace("{n}", String(t.trialDays))
+                      : t.freePlanPairNote}
+                  </Text>
+                </View>
 
                 {inviteCode ? (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>

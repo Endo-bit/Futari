@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, Pressable, ScrollView, Keyboard,
   KeyboardAvoidingView, Platform, StyleSheet,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { Sun, Cloud, Heart, Smile, Clover, Check, Share2 } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import ModeToggle from "../../components/ModeToggle";
@@ -15,6 +16,7 @@ import InlineEditor from "../../components/InlineEditor";
 import MindEditor from "../../components/MindEditor";
 import ShareSheet from "../../components/ShareSheet";
 import FloatingHearts from "../../components/FloatingHearts";
+import LockedPage, { WaitingPagesBanner } from "../../components/LockedPage";
 import { PairFieldCards } from "../../components/FieldCard";
 import TutorialTarget, { useTutorialScrollProps, useTutorialActive } from "../../components/TutorialTarget";
 import { C, fonts, cardShadow } from "../../lib/theme";
@@ -48,8 +50,9 @@ function ResponseCard({ name, reply, reactions, bg }) {
 }
 
 export default function TodayScreen() {
-  const { t, lang, today, todayIso, me, mode, api, getEntry, patchEntry, pairToday, refreshPairToday, partnerName, showToast, isDemo } =
+  const { t, lang, today, todayIso, me, refreshMe, mode, api, getEntry, patchEntry, pairToday, refreshPairToday, partnerName, showToast, isDemo, freeRevealsLeft } =
     useApp();
+  const router = useRouter();
   const scrollProps = useTutorialScrollProps();
   const touring = useTutorialActive();
 
@@ -96,10 +99,28 @@ export default function TodayScreen() {
   const alreadySent = !!((pairToday?.myReactions || []).length || pairToday?.myReply);
   const wrotePartner = !!pairToday?.wrotePartner;
   const canReveal = wrote && wrotePartner;
+  // Free plan: today's page is closed until the weekly free open is spent on it.
+  const locked = !isDemo && !!pairToday?.locked;
+  const outOfFreeOpens = locked && (freeRevealsLeft ?? 0) <= 0;
 
   const doReveal = async () => {
     if (!me?.pairSpaceId) return;
-    await api.revealDay(me.pairSpaceId, todayIso);
+    let res;
+    try {
+      res = await api.revealDay(me.pairSpaceId, todayIso);
+    } catch (err) {
+      if (err.message === "PREMIUM_REQUIRED") {
+        await Promise.all([refreshPairToday(), refreshMe()]);
+        track(EV.PAYWALL_VIEWED, { source: "locked_page", where: "today" });
+        router.push("/paywall");
+        return;
+      }
+      throw err;
+    }
+    if (res?.usedFreeReveal) {
+      track(EV.FREE_OPEN_USED, { where: "today" });
+      refreshMe();
+    }
     await refreshPairToday();
     setHearts(true);
     showToast(t.revealedToast, "heart");
@@ -177,6 +198,7 @@ export default function TodayScreen() {
           ) : (
             <>
               <SdBanner dIso={todayIso} />
+              {!isDemo && <WaitingPagesBanner />}
 
               {revealed ? (
                 <>
@@ -305,15 +327,18 @@ export default function TodayScreen() {
                     <SaveButton onPress={handleSave} label={t.save} icon={<Check size={18} color="#fff" />} />
                   </TutorialTarget>
 
-                  {mode === "pair" && me?.pairSpaceId && (
+                  {mode === "pair" && me?.pairSpaceId && (canReveal && outOfFreeOpens ? (
+                    <LockedPage where="today" />
+                  ) : (
                     <TutorialTarget id="today.reveal" style={{ alignItems: "center", marginTop: 2 }}>
                       <Text style={styles.revealLabel}>{revealLabel}</Text>
                       <Pressable disabled={!canReveal} onPress={doReveal} style={[styles.revealBtn, canReveal ? styles.revealBtnOn : styles.revealBtnOff]}>
                         <Heart size={16} color={canReveal ? C.pinkText : C.inkSoft} />
                         <Text style={[styles.revealBtnLabel, { color: canReveal ? C.pinkText : C.inkSoft }]}>{t.reveal}</Text>
                       </Pressable>
+                      {canReveal && locked && <Text style={styles.freeOpenNote}>{t.freeOpenNote}</Text>}
                     </TutorialTarget>
-                  )}
+                  ))}
                 </>
               )}
             </>
@@ -383,6 +408,7 @@ const styles = StyleSheet.create({
   revealBtnOn: { backgroundColor: "#fff", borderWidth: 1.5, borderColor: C.pinkDeep, ...cardShadow },
   revealBtnOff: { backgroundColor: "#F0E8D9" },
   revealBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5 },
+  freeOpenNote: { fontFamily: fonts.bodyRegular, fontSize: 12, color: C.pinkText, marginTop: 7, textAlign: "center" },
   responseName: { fontFamily: fonts.bodyExtraBold, fontSize: 12.5, color: C.ink, marginBottom: 6 },
   responseReply: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.ink, marginBottom: 6, lineHeight: 19 },
 });
