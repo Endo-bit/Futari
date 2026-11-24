@@ -53,6 +53,8 @@ export default function ThisOrThat() {
   const responder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_e, g) => Math.abs(g.dx) > 8 && Math.abs(g.dx) > Math.abs(g.dy),
+      // Keep the drag once it has started; nothing else may take it over mid-swipe.
+      onPanResponderTerminationRequest: () => false,
       onPanResponderMove: Animated.event([null, { dx: pos.x }], { useNativeDriver: false }),
       onPanResponderRelease: (_e, g) => {
         if (g.dx <= -SWIPE_AT) commit(0);

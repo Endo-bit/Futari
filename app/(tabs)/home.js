@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, ScrollView, StyleSheet } from "react-native";
+import { useState, useEffect, useCallback } from "react";
+import { View, Text, TextInput, Pressable, StyleSheet, AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Heart, PenLine, Check, ChevronRight } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
+import KeyboardScrollView from "../../components/KeyboardScrollView";
 import ModeToggle from "../../components/ModeToggle";
 import SaveButton from "../../components/SaveButton";
 import DateField from "../../components/DateField";
@@ -86,6 +87,40 @@ export default function HomeScreen() {
     showToast(t.savedToast);
   };
 
+  /* The couple's goal and next plan are written by either partner. Home
+     re-reads them whenever it comes into view, when the app returns to the
+     foreground, and every 20 seconds while it stays open — never while a field
+     is being typed in, so a refresh can't swap the text under the cursor. */
+  const refreshShared = useCallback(() => {
+    if (!me?.pairId || TextInput.State?.currentlyFocusedInput?.()) return;
+    api
+      .getMe()
+      .then((data) => {
+        // Only touch state when something the partner can change did change,
+        // so the 20-second check doesn't re-render (and re-sync the widget) for nothing.
+        setMe((prev) => {
+          if (!prev) return data;
+          const same = ["sharedGoal", "nextPlan", "startDate", "pairId", "plan", "premiumActive"].every((k) => prev[k] === data[k]) &&
+            prev.partner?.firstName === data.partner?.firstName;
+          return same ? prev : data;
+        });
+      })
+      .catch(() => {});
+  }, [me?.pairId, api, setMe]);
+  useFocusEffect(
+    useCallback(() => {
+      refreshShared();
+      const timer = setInterval(() => {
+        if (AppState.currentState === "active") refreshShared();
+      }, 20000);
+      const sub = AppState.addEventListener("change", (st) => st === "active" && refreshShared());
+      return () => {
+        clearInterval(timer);
+        sub.remove();
+      };
+    }, [refreshShared])
+  );
+
   const saveSharedGoal = async (text) => {
     await api.saveSharedGoal(text);
     setMe((prev) => (prev ? { ...prev, sharedGoal: text } : prev));
@@ -97,7 +132,7 @@ export default function HomeScreen() {
 
   return (
     <PaperBg>
-      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: 40 }}>
+      <KeyboardScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.tabHome}</Text>
           <View style={styles.streakPill}>
@@ -213,7 +248,7 @@ export default function HomeScreen() {
               <View style={styles.textCard}>
                 <Text style={styles.textCardLabel}>{t.homeGoalLabel}</Text>
                 <TextInput
-                  key={"goal-" + me.pairId}
+                  key={"goal-" + me.pairId + "-" + (me.sharedGoal || "")}
                   defaultValue={me.sharedGoal || ""}
                   onBlur={(ev) => {
                     if (ev.nativeEvent.text !== (me.sharedGoal || "")) saveSharedGoal(ev.nativeEvent.text);
@@ -227,7 +262,7 @@ export default function HomeScreen() {
               <View style={styles.textCard}>
                 <Text style={styles.textCardLabel}>{t.homePlanLabel}</Text>
                 <TextInput
-                  key={"plan-" + me.pairId}
+                  key={"plan-" + me.pairId + "-" + (me.nextPlan || "")}
                   defaultValue={me.nextPlan || ""}
                   onBlur={(ev) => {
                     if (ev.nativeEvent.text !== (me.nextPlan || "")) saveNextPlan(ev.nativeEvent.text);
@@ -275,7 +310,7 @@ export default function HomeScreen() {
           )}
 
         </View>
-      </ScrollView>
+      </KeyboardScrollView>
     </PaperBg>
   );
 }

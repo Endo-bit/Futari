@@ -1,4 +1,5 @@
-import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
+import KeyboardScrollView from "../KeyboardScrollView";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
@@ -13,7 +14,7 @@ export default function PlayShell({ title, sub, children, footer, scroll = true,
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const back = onBack || (() => (router.canGoBack() ? router.back() : router.replace("/play")));
-  const Body = scroll ? ScrollView : View;
+  const Body = scroll ? KeyboardScrollView : View;
   return (
     <PaperBg>
       <View style={{ paddingTop: insets.top + 4, flex: 1 }}>
@@ -24,7 +25,7 @@ export default function PlayShell({ title, sub, children, footer, scroll = true,
         </View>
         <Body
           {...(scroll
-            ? { style: { flex: 1 }, contentContainerStyle: styles.content, keyboardShouldPersistTaps: "handled", automaticallyAdjustKeyboardInsets: true }
+            ? { style: { flex: 1 }, contentContainerStyle: styles.content }
             : { style: [{ flex: 1 }, styles.content] })}
         >
           {!!title && <Text style={styles.title}>{title}</Text>}

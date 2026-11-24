@@ -88,7 +88,10 @@ export default function RootLayout() {
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="entry/[date]" options={{ presentation: "modal" }} />
                   <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
-                  <Stack.Screen name="plane/send" options={{ presentation: "fullScreenModal", gestureEnabled: false }} />
+                  {/* iOS lets you swipe right anywhere on a screen to go back; on screens
+                      whose whole point is swiping, that closed the game mid-swipe. */}
+                  <Stack.Screen name="play/swipe" options={{ gestureEnabled: false, fullScreenGestureEnabled: false }} />
+                  <Stack.Screen name="plane/send" options={{ presentation: "fullScreenModal", gestureEnabled: false, fullScreenGestureEnabled: false }} />
                   <Stack.Screen name="plane/index" options={{ presentation: "fullScreenModal" }} />
                 </Stack>
                 <TutorialOverlay />

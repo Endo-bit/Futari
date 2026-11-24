@@ -3,6 +3,7 @@ import { View, Text, TextInput, Pressable, ScrollView, Alert, StyleSheet, Keyboa
 import { useRouter } from "expo-router";
 import { ChevronLeft, ChevronRight, ChevronDown, Heart, Cake, Star, Plus, Lock, Trash2 } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
+import KeyboardScrollView from "../../components/KeyboardScrollView";
 import ModeToggle from "../../components/ModeToggle";
 import PairingPrompt from "../../components/PairingPrompt";
 import DateField from "../../components/DateField";
@@ -92,12 +93,7 @@ export default function JournalScreen() {
 
   return (
     <PaperBg>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
-      >
-      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: touring ? 260 : 40 }} keyboardShouldPersistTaps="handled">
+      <KeyboardScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: touring ? 260 : 40 }}>
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.journalTitle}</Text>
           <View style={styles.streakPill}>
@@ -280,8 +276,7 @@ export default function JournalScreen() {
         )}
 
         <Text style={styles.privacyNote}>{t.privacyNote}</Text>
-      </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardScrollView>
     </PaperBg>
   );
 }

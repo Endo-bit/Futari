@@ -6,6 +6,7 @@ import {
 import { useRouter } from "expo-router";
 import { Sun, Cloud, Heart, Smile, Clover, Check, Share2, Send } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
+import KeyboardScrollView from "../../components/KeyboardScrollView";
 import ModeToggle from "../../components/ModeToggle";
 import SaveButton from "../../components/SaveButton";
 import BlockCard from "../../components/BlockCard";
@@ -170,14 +171,9 @@ export default function TodayScreen() {
 
   return (
     <PaperBg style={{ position: "relative" }}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
-      >
       {/* Extra room at the bottom during the tour, so even the last control on
           the page can be scrolled up clear of the bubble and the keyboard. */}
-      <ScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: touring ? 260 : 40 }} keyboardShouldPersistTaps="handled">
+      <KeyboardScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: touring ? 260 : 40 }}>
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.todaysPage}</Text>
           <Text style={styles.dateLabel}>{dateLabel(today, t, lang)}</Text>
@@ -355,8 +351,7 @@ export default function TodayScreen() {
             </>
           )}
         </View>
-      </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardScrollView>
 
       <FloatingHearts active={hearts} />
 

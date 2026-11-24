@@ -10,6 +10,7 @@ import {
 } from "lucide-react-native";
 import InviteSheet from "../../components/InviteSheet";
 import PaperBg from "../../components/PaperBg";
+import KeyboardScrollView from "../../components/KeyboardScrollView";
 import Pill from "../../components/Pill";
 import TimeField from "../../components/TimeField";
 import { C, fonts, cardShadow } from "../../lib/theme";
@@ -284,7 +285,7 @@ export default function SettingsScreen() {
 
   return (
     <PaperBg>
-      <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+      <KeyboardScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.settingsTitle}</Text>
         </View>
@@ -495,7 +496,7 @@ export default function SettingsScreen() {
           {!!email && <Text style={styles.privacyNote}>{t.auSignedInAs.replace("{e}", email)}</Text>}
           <Text style={styles.privacyNote}>{t.privacyNote}</Text>
         </View>
-      </ScrollView>
+      </KeyboardScrollView>
 
       <InviteSheet visible={inviteSheetOpen} onClose={() => setInviteSheetOpen(false)} code={inviteCode} />
     </PaperBg>
