@@ -1,12 +1,17 @@
 import { useEffect, useRef } from "react";
+import { Platform } from "react-native";
 import { useLinkingURL } from "expo-linking";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "../lib/auth";
 import { useApp } from "../lib/appState";
 import { parsePairingLink, setPendingPairCode, takePendingPairCode, peekPendingPairCode } from "../lib/deepLinks";
 import { track } from "../lib/analytics";
 import { EV } from "../lib/events";
+
+/* expo-notifications throws on web for this one, which blanked the whole web
+   build; there are no tapped notifications to read there anyway. */
+const useLastNotificationResponse = Platform.OS === "web" ? () => null : Notifications.useLastNotificationResponse;
 
 /* Turns an incoming pairing link into an actual pairing.
 
@@ -26,15 +31,30 @@ export default function DeepLinkHandler() {
 
   /* A tapped notification that points somewhere — the "did your partner get the
      invite?" nudge opens the invite screen rather than wherever the app was. */
-  const lastResponse = Notifications.useLastNotificationResponse();
+  const lastResponse = useLastNotificationResponse();
   const handledResponse = useRef(null);
   useEffect(() => {
     const id = lastResponse?.notification?.request?.identifier;
-    const target = lastResponse?.notification?.request?.content?.data?.url;
-    if (!id || handledResponse.current === id || !isSignedIn) return;
+    const data = lastResponse?.notification?.request?.content?.data || {};
+    const target = data.url;
+    if (!id || handledResponse.current === id || !isLoaded) return;
+    // Game notifications work before there is an account; the rest need one.
+    if (typeof target === "string" && /^futari:\/\/play(\/(type|swipe|match|memory|capsule|bingo))?$/.test(target)) {
+      handledResponse.current = id;
+      router.push(target.replace("futari://", "/"));
+      return;
+    }
+    if (data.type === "play_answered") {
+      handledResponse.current = id;
+      router.push("/play");
+      return;
+    }
+    if (!isSignedIn) return;
     handledResponse.current = id;
     if (target === "futari://invite") router.push("/invite");
-  }, [lastResponse, isSignedIn]); // eslint-disable-line
+    else if (target === "futari://plane") router.push("/plane");
+    else if (target === "futari://today") router.push("/(tabs)/today");
+  }, [lastResponse, isSignedIn, isLoaded]); // eslint-disable-line
 
   // A link arrived while the app was running (or launched it).
   useEffect(() => {

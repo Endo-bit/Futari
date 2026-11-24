@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Platform } from "react-native";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "./auth";
 import { track } from "./analytics";
 import { EV } from "./events";
 

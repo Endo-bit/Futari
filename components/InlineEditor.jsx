@@ -87,6 +87,6 @@ const styles = StyleSheet.create({
   },
   chipsWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 },
   chip: { borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff", borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14 },
-  chipLabel: { fontFamily: fonts.bodyBold, fontSize: 12.5, color: C.pinkText },
+  chipLabel: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: C.pinkText },
   footer: { paddingHorizontal: 18, paddingBottom: 26 },
 });

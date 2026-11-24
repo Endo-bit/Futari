@@ -238,7 +238,7 @@ export default function JournalScreen() {
                         disabled={!sdNewTitle.trim() || !sdNewDate}
                         style={[styles.sdAddSubmit, sdNewTitle.trim() && sdNewDate ? styles.sdAddSubmitOn : styles.sdAddSubmitOff]}
                       >
-                        <Text style={{ fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: sdNewTitle.trim() && sdNewDate ? "#fff" : C.inkSoft }}>
+                        <Text style={{ fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: sdNewTitle.trim() && sdNewDate ? "#fff" : C.inkSoft }}>
                           {t.add}
                         </Text>
                       </Pressable>
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "baseline", justifyContent: "space-between", paddingHorizontal: 22, paddingTop: 18, paddingBottom: 6 },
   h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, paddingRight: 10, color: C.ink },
   streakPill: { flexDirection: "row", alignItems: "center", gap: 5 },
-  streakPillText: { fontFamily: fonts.bodyExtraBold, fontSize: 13, color: C.pinkText },
+  streakPillText: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: C.pinkText },
   section: { paddingHorizontal: 18 },
   calCard: { backgroundColor: C.card, borderRadius: 22, paddingVertical: 16, paddingHorizontal: 14, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
   calNav: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12, paddingHorizontal: 6 },
@@ -302,23 +302,23 @@ const styles = StyleSheet.create({
   monthGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   monthBtn: { width: "22%", paddingVertical: 8, borderRadius: 10, alignItems: "center", backgroundColor: "#fff" },
   monthBtnSel: { backgroundColor: C.pinkDeep },
-  monthBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 12.5 },
+  monthBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 13.5 },
   weekdayRow: { flexDirection: "row" },
-  weekdayLabel: { flex: 1, textAlign: "center", fontFamily: fonts.bodyExtraBold, fontSize: 11, color: C.inkSoft, paddingBottom: 4 },
+  weekdayLabel: { flex: 1, textAlign: "center", fontFamily: fonts.bodyExtraBold, fontSize: 12, color: C.inkSoft, paddingBottom: 4 },
   grid: { flexDirection: "row", flexWrap: "wrap" },
   cell: { width: `${100 / 7}%`, aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: 12 },
   cellToday: { borderWidth: 2, borderColor: C.pinkDeep },
   cellFilled: { backgroundColor: C.pink },
-  cellText: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.ink },
+  cellText: { fontFamily: fonts.bodyRegular, fontSize: 14, color: C.ink },
   cellTextFuture: { color: "#C9BEAC" },
   cellTextFilled: { color: C.pinkText, fontFamily: fonts.bodyExtraBold },
   sdCard: { backgroundColor: C.card, borderRadius: 22, padding: 18, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
   sdHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
   sdTitle: { fontFamily: fonts.scriptSemiBold, fontSize: 23, lineHeight: 34, paddingVertical: 3, paddingRight: 7, color: C.ink },
   sdAddBtn: { backgroundColor: C.pink, borderRadius: 999, width: 30, height: 30, alignItems: "center", justifyContent: "center" },
-  sdLimitNote: { fontFamily: fonts.bodyRegular, fontSize: 12, color: C.inkSoft, marginBottom: 10 },
+  sdLimitNote: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.inkSoft, marginBottom: 10 },
   sdForm: { backgroundColor: C.paper, borderRadius: 16, padding: 12, marginBottom: 12, gap: 9 },
-  sdFormInput: { fontFamily: fonts.bodyRegular, fontSize: 14, paddingVertical: 10, paddingHorizontal: 13, borderRadius: 12, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff", color: C.ink },
+  sdFormInput: { fontFamily: fonts.bodyRegular, fontSize: 15, paddingVertical: 10, paddingHorizontal: 13, borderRadius: 12, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff", color: C.ink },
   sdIconRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   sdIconBtn: { width: 38, height: 38, borderRadius: 999, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
   sdIconBtnSel: { borderWidth: 2, borderColor: C.pinkDeep, backgroundColor: C.pink },
@@ -328,9 +328,9 @@ const styles = StyleSheet.create({
   sdRow: { flexDirection: "row", alignItems: "center", gap: 11, paddingVertical: 10 },
   sdRowBorder: { borderBottomWidth: 1, borderBottomColor: C.cardBorder },
   sdRowIcon: { width: 32, height: 32, borderRadius: 999, backgroundColor: C.pink, alignItems: "center", justifyContent: "center" },
-  sdRowTitle: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.ink },
-  sdRowDate: { fontFamily: fonts.bodySemiBold, fontSize: 11.5, color: C.inkSoft },
-  sdRowCountdown: { fontFamily: fonts.bodyExtraBold, fontSize: 12 },
+  sdRowTitle: { fontFamily: fonts.bodyBold, fontSize: 15, color: C.ink },
+  sdRowDate: { fontFamily: fonts.bodySemiBold, fontSize: 12.5, color: C.inkSoft },
+  sdRowCountdown: { fontFamily: fonts.bodyExtraBold, fontSize: 13 },
   sdDeleteBtn: { marginLeft: 6, padding: 4 },
-  privacyNote: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: C.inkSoft, textAlign: "center", marginHorizontal: 30, marginTop: 8 },
+  privacyNote: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.inkSoft, textAlign: "center", marginHorizontal: 30, marginTop: 8 },
 });

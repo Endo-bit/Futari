@@ -37,5 +37,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
   },
   checkBadge: { width: 17, height: 17, borderRadius: 999, backgroundColor: C.green, alignItems: "center", justifyContent: "center" },
-  msg: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.paper },
+  msg: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.paper },
 });

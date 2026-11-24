@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useAuth, useUser } from "@clerk/expo";
+import { useAuth, useUser } from "./auth";
 import { T, LANGS, detectLang } from "./i18n";
 import { isoOf, fromIso } from "./format";
 import { useApi } from "./api";
@@ -11,6 +11,7 @@ import { signalTutorial } from "./tutorialBus";
 import { armReminders, syncNotificationsToServer } from "./reminder";
 import { cancelInviteNudge } from "./pushNotifications";
 import { takeOnboardingAnswer } from "./onboarding";
+import { armFunNotifications } from "./funNotifications";
 import { identify, setSuperProperties, track, resetAnalytics } from "./analytics";
 import { EV } from "./events";
 import {
@@ -119,6 +120,13 @@ export function AppStateProvider({ children }) {
     if (!me?.userId) return;
     syncNotificationsToServer({ api }).catch(() => {});
   }, [me?.userId]); // eslint-disable-line
+
+  /* Anniversaries, the month's bingo card, the trial's last day and the
+     come-back nudge — re-armed whenever what they depend on changes. */
+  useEffect(() => {
+    if (!me?.userId) return;
+    armFunNotifications({ t, startDate: me.startDate || null, trialEndsAt: me.trialEndsAt || null, trialActive: !!me.trialActive }).catch(() => {});
+  }, [me?.userId, me?.startDate, me?.trialEndsAt, me?.trialActive, lang]); // eslint-disable-line
 
   /* Pairing done: the "did your partner get the link?" nudge has no point. */
   useEffect(() => {

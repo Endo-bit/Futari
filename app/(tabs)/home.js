@@ -7,6 +7,8 @@ import PaperBg from "../../components/PaperBg";
 import ModeToggle from "../../components/ModeToggle";
 import SaveButton from "../../components/SaveButton";
 import DateField from "../../components/DateField";
+import HomePlayCard from "../../components/play/HomePlayCard";
+import PlaneInbox from "../../components/plane/PlaneInbox";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { useApp, fromIso } from "../../lib/appState";
 import { promptFor, quizFor } from "../../lib/dailyContent";
@@ -123,6 +125,8 @@ export default function HomeScreen() {
               <ChevronRight size={18} color={C.pinkText} />
             </Pressable>
           )}
+          <PlaneInbox />
+          <HomePlayCard />
 
           <View style={styles.promptCard}>
             <Text style={styles.promptLabel}>{t.littlePrompt}</Text>
@@ -279,11 +283,11 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6 },
   streakPill: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: C.pink, borderRadius: 999, paddingVertical: 5, paddingHorizontal: 11 },
-  streakPillText: { fontFamily: fonts.bodyExtraBold, fontSize: 12.5, color: C.pinkText },
+  streakPillText: { fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: C.pinkText },
   inviteCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.pink, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16 },
   inviteIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: C.pinkDeep, alignItems: "center", justifyContent: "center" },
-  inviteTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
-  inviteBody: { fontFamily: fonts.bodyRegular, fontSize: 12.5, lineHeight: 18, color: C.inkSoft, marginTop: 1 },
+  inviteTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.ink },
+  inviteBody: { fontFamily: fonts.bodyRegular, fontSize: 13.5, lineHeight: 18, color: C.inkSoft, marginTop: 1 },
   h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, paddingRight: 10, color: C.ink },
   section: { paddingHorizontal: 18, paddingTop: 10 },
   togetherCard: {
@@ -296,26 +300,26 @@ const styles = StyleSheet.create({
     ...cardShadow,
   },
   editBtn: { position: "absolute", top: 12, right: 12, backgroundColor: "rgba(255,255,255,0.6)", borderRadius: 999, width: 30, height: 30, alignItems: "center", justifyContent: "center" },
-  togetherLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11.5, letterSpacing: 1.5, color: C.pinkText, textTransform: "uppercase", marginBottom: 6 },
+  togetherLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 12.5, letterSpacing: 1.5, color: C.pinkText, textTransform: "uppercase", marginBottom: 6 },
   togetherNumber: { fontFamily: fonts.scriptBold, fontSize: 56, color: C.ink, lineHeight: 84, paddingVertical: 4, paddingRight: 14 },
-  togetherSince: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.inkSoft, marginTop: 6 },
+  togetherSince: { fontFamily: fonts.bodyRegular, fontSize: 14, color: C.inkSoft, marginTop: 6 },
   setDateBtn: { marginTop: 6, backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 10, paddingHorizontal: 18 },
-  setDateLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: "#fff" },
+  setDateLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
   startDateForm: { marginTop: 16, backgroundColor: "#fff", borderRadius: 16, padding: 12, width: "100%" },
   quizCard: { backgroundColor: C.pink, borderRadius: 20, padding: 18 },
   quizQ: { fontFamily: fonts.scriptSemiBold, fontSize: 21, color: C.ink, lineHeight: 32, paddingVertical: 3, paddingRight: 6, marginBottom: 10 },
   quizRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
   quizBtn: { flex: 1, borderRadius: 999, paddingVertical: 9, alignItems: "center", backgroundColor: "#fff" },
   quizBtnSel: { backgroundColor: C.pinkDeep },
-  quizBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 13 },
-  quizAnswer: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: "#A9798C" },
+  quizBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14 },
+  quizAnswer: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: "#A9798C" },
   textCard: { backgroundColor: C.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.cardBorder },
-  textCardLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.inkSoft, marginBottom: 8 },
-  textarea: { minHeight: 44, backgroundColor: C.paper, borderRadius: 10, padding: 11, fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.ink, textAlignVertical: "top" },
+  textCardLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 12, letterSpacing: 1.2, color: C.inkSoft, marginBottom: 8 },
+  textarea: { minHeight: 44, backgroundColor: C.paper, borderRadius: 10, padding: 11, fontFamily: fonts.bodyRegular, fontSize: 14.5, color: C.ink, textAlignVertical: "top" },
   promptCard: { backgroundColor: C.card, borderRadius: 18, padding: 18, borderWidth: 1, borderColor: C.cardBorder },
-  promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.pinkText, marginBottom: 4 },
+  promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 12, letterSpacing: 1.2, color: C.pinkText, marginBottom: 4 },
   promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 24, color: C.ink, lineHeight: 36, paddingVertical: 3, paddingRight: 7 },
   promptAnswers: { marginTop: 12, gap: 6 },
-  promptAnswerLine: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.ink, lineHeight: 19 },
-  promptAnswerWho: { fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: C.inkSoft },
+  promptAnswerLine: { fontFamily: fonts.bodyRegular, fontSize: 14.5, color: C.ink, lineHeight: 19 },
+  promptAnswerWho: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.inkSoft },
 });

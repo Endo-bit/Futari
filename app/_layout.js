@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { Stack } from "expo-router";
-import { ClerkProvider, useAuth } from "@clerk/expo";
+import { ClerkProvider } from "@clerk/expo";
+import { AuthProvider, useAuth } from "../lib/auth";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { useFonts } from "expo-font";
 import {
@@ -21,6 +22,7 @@ import { EntitlementProvider } from "../lib/entitlement";
 import { AppStateProvider } from "../lib/appState";
 import { TutorialProvider } from "../lib/tutorial";
 import TutorialOverlay from "../components/TutorialOverlay";
+import ToastView from "../components/Toast";
 import DeepLinkHandler from "../components/DeepLinkHandler";
 import { initAnalytics, track } from "../lib/analytics";
 import { EV } from "../lib/events";
@@ -68,6 +70,9 @@ export default function RootLayout() {
   }
   return (
     <ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+      {/* Clerk stays mounted only so lib/auth can move a still-live Clerk
+          session over to Firebase; everything else reads lib/auth. */}
+      <AuthProvider>
       <RootReady>
         <EntitlementProvider>
           <AppStateProvider>
@@ -83,14 +88,19 @@ export default function RootLayout() {
                   <Stack.Screen name="(tabs)" />
                   <Stack.Screen name="entry/[date]" options={{ presentation: "modal" }} />
                   <Stack.Screen name="paywall" options={{ presentation: "modal" }} />
+                  <Stack.Screen name="plane/send" options={{ presentation: "fullScreenModal", gestureEnabled: false }} />
+                  <Stack.Screen name="plane/index" options={{ presentation: "fullScreenModal" }} />
                 </Stack>
                 <TutorialOverlay />
+                {/* At the root so screens outside the tabs (games, paper planes) get toasts too. */}
+                <ToastView />
               </View>
               <DeepLinkHandler />
             </TutorialProvider>
           </AppStateProvider>
         </EntitlementProvider>
       </RootReady>
+      </AuthProvider>
     </ClerkProvider>
   );
 }

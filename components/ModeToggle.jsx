@@ -35,5 +35,5 @@ const styles = StyleSheet.create({
   },
   btn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14 },
   btnSel: { backgroundColor: C.pinkDeep },
-  label: { fontFamily: fonts.bodyExtraBold, fontSize: 13 },
+  label: { fontFamily: fonts.bodyExtraBold, fontSize: 14 },
 });

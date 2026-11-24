@@ -114,6 +114,6 @@ const styles = StyleSheet.create({
   toggleRow: { flexDirection: "row", alignItems: "center", gap: 9, paddingVertical: 10 },
   checkbox: { width: 24, height: 24, borderRadius: 8, alignItems: "center", justifyContent: "center", backgroundColor: "#fff", borderWidth: 1.5, borderColor: C.cardBorder },
   checkboxOn: { backgroundColor: C.pinkDeep, borderColor: C.pinkDeep },
-  toggleLabel: { flex: 1, fontFamily: fonts.bodySemiBold, fontSize: 13, color: C.ink },
+  toggleLabel: { flex: 1, fontFamily: fonts.bodySemiBold, fontSize: 14, color: C.ink },
   actions: { paddingTop: 6 },
 });

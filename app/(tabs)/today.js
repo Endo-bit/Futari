@@ -4,7 +4,7 @@ import {
   KeyboardAvoidingView, Platform, StyleSheet,
 } from "react-native";
 import { useRouter } from "expo-router";
-import { Sun, Cloud, Heart, Smile, Clover, Check, Share2 } from "lucide-react-native";
+import { Sun, Cloud, Heart, Smile, Clover, Check, Share2, Send } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import ModeToggle from "../../components/ModeToggle";
 import SaveButton from "../../components/SaveButton";
@@ -50,7 +50,7 @@ function ResponseCard({ name, reply, reactions, bg }) {
 }
 
 export default function TodayScreen() {
-  const { t, lang, today, todayIso, me, refreshMe, mode, api, getEntry, patchEntry, pairToday, refreshPairToday, partnerName, showToast, isDemo, freeRevealsLeft } =
+  const { t, lang, today, todayIso, me, refreshMe, mode, spaceId, api, getEntry, patchEntry, pairToday, refreshPairToday, partnerName, showToast, isDemo, freeRevealsLeft } =
     useApp();
   const router = useRouter();
   const scrollProps = useTutorialScrollProps();
@@ -327,6 +327,17 @@ export default function TodayScreen() {
                     <SaveButton onPress={handleSave} label={t.save} icon={<Check size={18} color="#fff" />} />
                   </TutorialTarget>
 
+                  {wrote && !!me?.pairId && !isDemo && !touring && (
+                    <Pressable
+                      onPress={() => router.push({ pathname: "/plane/send", params: { date: todayIso, spaceId } })}
+                      style={styles.planeBtn}
+                      accessibilityRole="button"
+                    >
+                      <Send size={17} color={C.pinkText} />
+                      <Text style={styles.planeBtnLabel}>{t.plSendPlane}</Text>
+                    </Pressable>
+                  )}
+
                   {mode === "pair" && me?.pairSpaceId && (canReveal && outOfFreeOpens ? (
                     <LockedPage where="today" />
                   ) : (
@@ -384,31 +395,33 @@ export default function TodayScreen() {
 const styles = StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6, gap: 4 },
   h1: { fontFamily: fonts.scriptSemiBold, fontSize: 34, lineHeight: 50, paddingVertical: 4, paddingRight: 10, color: C.ink, flex: 1 },
-  dateLabel: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: C.pinkText },
+  dateLabel: { fontFamily: fonts.bodySemiBold, fontSize: 14, color: C.pinkText },
   shareBtn: { marginLeft: 10, width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: C.pink },
   section: { paddingHorizontal: 18, paddingTop: 8 },
   // The day's question reads as the heading of the page, not as another card.
   promptCard: { paddingTop: 4, paddingBottom: 2 },
-  promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1.2, color: C.pinkText, marginBottom: 2 },
+  promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 12, letterSpacing: 1.2, color: C.pinkText, marginBottom: 2 },
   promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 27, color: C.ink, lineHeight: 38, paddingVertical: 3, paddingRight: 8 },
   promptInput: { marginTop: 8, minHeight: 64, backgroundColor: C.card, borderWidth: 1, borderColor: C.cardBorder, borderRadius: 14, padding: 13, fontFamily: fonts.bodyRegular, fontSize: 15, lineHeight: 22, color: C.ink, textAlignVertical: "top" },
-  who: { fontFamily: fonts.bodyExtraBold, fontSize: 13, color: C.inkSoft },
+  who: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: C.inkSoft },
   divider: { height: 1, backgroundColor: C.cardBorder, marginVertical: 6 },
   composer: { backgroundColor: C.card, borderWidth: 1, borderColor: C.cardBorder, borderRadius: 18, padding: 16 },
-  receiveTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: C.ink, marginBottom: 9 },
+  receiveTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink, marginBottom: 9 },
   phraseBtn: { backgroundColor: "#fff", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 },
   phraseBtnSel: { backgroundColor: C.green },
-  phraseLabel: { fontFamily: fonts.bodyRegular, fontSize: 13.5 },
-  replyInput: { minHeight: 70, backgroundColor: "#fff", borderWidth: 1, borderColor: C.cardBorder, borderRadius: 12, padding: 12, fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.ink, textAlignVertical: "top" },
+  phraseLabel: { fontFamily: fonts.bodyRegular, fontSize: 14.5 },
+  replyInput: { minHeight: 70, backgroundColor: "#fff", borderWidth: 1, borderColor: C.cardBorder, borderRadius: 12, padding: 12, fontFamily: fonts.bodyRegular, fontSize: 14.5, color: C.ink, textAlignVertical: "top" },
   reactionRow: { flexDirection: "row", justifyContent: "center", gap: 16, paddingVertical: 16 },
   reactionBtn: { width: 52, height: 52, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: "#fff", borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
   reactionBtnOn: { borderWidth: 2, borderColor: C.pinkDeep },
-  revealLabel: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: C.inkSoft, marginBottom: 8, textAlign: "center" },
+  revealLabel: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.inkSoft, marginBottom: 8, textAlign: "center" },
   revealBtn: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 999, paddingVertical: 13, paddingHorizontal: 32 },
   revealBtnOn: { backgroundColor: "#fff", borderWidth: 1.5, borderColor: C.pinkDeep, ...cardShadow },
   revealBtnOff: { backgroundColor: "#F0E8D9" },
   revealBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5 },
-  freeOpenNote: { fontFamily: fonts.bodyRegular, fontSize: 12, color: C.pinkText, marginTop: 7, textAlign: "center" },
-  responseName: { fontFamily: fonts.bodyExtraBold, fontSize: 12.5, color: C.ink, marginBottom: 6 },
-  responseReply: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.ink, marginBottom: 6, lineHeight: 19 },
+  planeBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, borderRadius: 999, borderWidth: 1.5, borderColor: C.pinkDeep, backgroundColor: C.card },
+  planeBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.pinkText },
+  freeOpenNote: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.pinkText, marginTop: 7, textAlign: "center" },
+  responseName: { fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: C.ink, marginBottom: 6 },
+  responseReply: { fontFamily: fonts.bodyRegular, fontSize: 14, color: C.ink, marginBottom: 6, lineHeight: 19 },
 });

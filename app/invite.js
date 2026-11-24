@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, Share, Platform, KeyboardAvoidingView, StyleSheet } from "react-native";
 import { Redirect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "../lib/auth";
 import * as Clipboard from "expo-clipboard";
 import { Heart, Send, Link2, X } from "lucide-react-native";
 import FloatingHearts from "../components/FloatingHearts";
@@ -251,16 +251,16 @@ const styles = StyleSheet.create({
   code: { fontFamily: fonts.bodyExtraBold, fontSize: 26, letterSpacing: 6, color: C.ink, marginTop: 4 },
   row: { flexDirection: "row", gap: 10, alignItems: "center" },
   chip: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 999, borderWidth: 1, borderColor: "rgba(120,100,70,0.15)", backgroundColor: C.card, paddingVertical: 9, paddingHorizontal: 16 },
-  chipLabel: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: C.pinkText },
+  chipLabel: { fontFamily: fonts.bodyBold, fontSize: 14.5, color: C.pinkText },
   codeBox: { marginTop: 18, minHeight: 48, justifyContent: "center" },
-  link: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.pinkText, textDecorationLine: "underline" },
+  link: { fontFamily: fonts.bodyBold, fontSize: 15, color: C.pinkText, textDecorationLine: "underline" },
   codeInput: { width: 170, fontFamily: fonts.bodyBold, fontSize: 17, letterSpacing: 3, paddingVertical: 11, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, borderColor: "rgba(120,100,70,0.15)", backgroundColor: "#fff", color: C.ink },
   redeem: { backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 20 },
   redeemOff: { backgroundColor: "#E9DFD2" },
-  redeemLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: "#fff" },
+  redeemLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
   footer: { paddingHorizontal: 28, paddingTop: 8, gap: 4, maxWidth: 480, width: "100%", alignSelf: "center" },
   primary: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 16 },
   primaryLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 16, color: "#fff" },
   textBtn: { alignItems: "center", paddingVertical: 12 },
-  textBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 14.5, color: C.inkSoft },
+  textBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 15.5, color: C.inkSoft },
 });

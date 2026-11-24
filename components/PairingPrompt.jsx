@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   card: { backgroundColor: C.card, borderRadius: 20, paddingVertical: 22, paddingHorizontal: 20, borderWidth: 1, borderColor: C.cardBorder, alignItems: "center", gap: 10, ...cardShadow },
   iconCircle: { width: 46, height: 46, borderRadius: 999, backgroundColor: C.pink, alignItems: "center", justifyContent: "center" },
   title: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.ink },
-  sub: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.inkSoft, textAlign: "center", maxWidth: 260 },
+  sub: { fontFamily: fonts.bodyRegular, fontSize: 14.5, color: C.inkSoft, textAlign: "center", maxWidth: 260 },
   btn: { marginTop: 6, backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 24 },
-  btnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: "#fff" },
+  btnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
 });

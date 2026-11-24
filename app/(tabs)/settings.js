@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, Alert, Share, StyleSheet, Linking, Platform } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "../../lib/auth";
 import * as Clipboard from "expo-clipboard";
 import {
   Heart, Globe, Bell, Download, Trash2, Link2Off, Check, Lock, HelpCircle, Sparkles, ChevronRight, CreditCard, Send,
   LayoutGrid,
+  LogOut,
 } from "lucide-react-native";
 import InviteSheet from "../../components/InviteSheet";
 import PaperBg from "../../components/PaperBg";
@@ -18,7 +19,6 @@ import { buildExportText } from "../../lib/exportText";
 import { WIDGET_MODES, subscribeWidgetStatus } from "../../lib/widgets";
 import { sdTitle } from "../../components/SdBanner";
 import { registerForPushNotifications, pushTokenIfAllowed } from "../../lib/pushNotifications";
-import { UserButton } from "@clerk/expo/native";
 import {
   DEFAULT_REMINDER_TIME,
   changeReminderTime,
@@ -42,7 +42,7 @@ function Row({ icon, label, right, onPress, danger, last }) {
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { signOut } = useAuth();
+  const { signOut, email } = useAuth();
   const {
     t, lang, setLang, me, setMe, refreshMe, partnerName, api, showToast, openTutorial, todayIso,
     specialDays, widgetMode, chooseWidgetMode, widgetSpecialDayId, chooseWidgetSpecialDay,
@@ -287,7 +287,6 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.settingsTitle}</Text>
-          <UserButton />
         </View>
 
         <View style={[styles.section, { gap: 14 }]}>
@@ -361,7 +360,7 @@ export default function SettingsScreen() {
                     disabled={pairingBusy || !redeemInput.trim()}
                     style={[styles.redeemBtn, redeemInput.trim() ? styles.redeemBtnOn : styles.redeemBtnOff]}
                   >
-                    <Text style={{ fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: redeemInput.trim() ? "#fff" : C.inkSoft }}>
+                    <Text style={{ fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: redeemInput.trim() ? "#fff" : C.inkSoft }}>
                       {t.redeemCode}
                     </Text>
                   </Pressable>
@@ -489,9 +488,11 @@ export default function SettingsScreen() {
             {isPremium && (
               <Row icon={<CreditCard size={17} color={C.inkSoft} />} label={t.manageSubscription} onPress={handleManageSubscription} />
             )}
+            <Row icon={<LogOut size={17} color={C.inkSoft} />} label={t.auSignOut} onPress={() => signOut()} />
             <Row icon={<Trash2 size={17} color="#C0605C" />} label={t.deleteAcc} onPress={handleDeleteAccount} danger last />
           </View>
 
+          {!!email && <Text style={styles.privacyNote}>{t.auSignedInAs.replace("{e}", email)}</Text>}
           <Text style={styles.privacyNote}>{t.privacyNote}</Text>
         </View>
       </ScrollView>
@@ -509,47 +510,47 @@ const styles = StyleSheet.create({
   premiumCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.pinkDeep, borderRadius: 20, padding: 16, ...cardShadow },
   premiumCardIcon: { width: 34, height: 34, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.3)", alignItems: "center", justifyContent: "center" },
   premiumCardTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
-  premiumCardSub: { fontFamily: fonts.bodyRegular, fontSize: 12, color: "rgba(255,255,255,0.9)", marginTop: 2 },
+  premiumCardSub: { fontFamily: fonts.bodyRegular, fontSize: 13, color: "rgba(255,255,255,0.9)", marginTop: 2 },
   avatarPair: { width: 44, height: 32 },
   avatarDot: { position: "absolute", width: 32, height: 32, borderRadius: 999, opacity: 0.85 },
-  pairedWith: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
-  pairedSince: { fontFamily: fonts.bodyBold, fontSize: 12, color: C.pinkText },
-  pairingTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
-  notPaired: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.inkSoft },
+  pairedWith: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.ink },
+  pairedSince: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.pinkText },
+  pairingTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.ink },
+  notPaired: { fontFamily: fonts.bodyRegular, fontSize: 14, color: C.inkSoft },
   premiumNote: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: C.pink, borderRadius: 10, paddingVertical: 8, paddingHorizontal: 12 },
-  premiumNoteText: { fontFamily: fonts.bodyBold, fontSize: 12.5, color: C.pinkText, flex: 1 },
+  premiumNoteText: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: C.pinkText, flex: 1 },
   inviteCode: { fontFamily: fonts.scriptBold, fontSize: 28, lineHeight: 42, paddingVertical: 3, paddingRight: 8, letterSpacing: 3, color: C.ink },
   copyBtn: { borderRadius: 999, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff", paddingVertical: 8, paddingHorizontal: 16 },
-  copyBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.pinkText },
+  copyBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.pinkText },
   generateBtn: { backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 11, paddingHorizontal: 16, alignSelf: "flex-start" },
-  generateBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: "#fff" },
+  generateBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
   divider: { height: 1, backgroundColor: C.cardBorder },
-  enterCodeTitle: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.ink },
-  redeemInput: { flex: 1, fontFamily: fonts.bodyRegular, fontSize: 14, paddingVertical: 10, paddingHorizontal: 13, borderRadius: 12, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff", color: C.ink, letterSpacing: 2 },
+  enterCodeTitle: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.ink },
+  redeemInput: { flex: 1, fontFamily: fonts.bodyRegular, fontSize: 15, paddingVertical: 10, paddingHorizontal: 13, borderRadius: 12, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff", color: C.ink, letterSpacing: 2 },
   redeemBtn: { borderRadius: 999, paddingHorizontal: 18, alignItems: "center", justifyContent: "center" },
   redeemBtnOn: { backgroundColor: C.pinkDeep },
   redeemBtnOff: { backgroundColor: "#E9DFD2" },
-  cardHeading: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
-  widgetHint: { fontFamily: fonts.bodyRegular, fontSize: 12, color: C.inkSoft, lineHeight: 18, marginBottom: 10 },
-  widgetDiag: { fontFamily: fonts.bodyRegular, fontSize: 11, color: "#C0605C", lineHeight: 16, marginBottom: 10 },
+  cardHeading: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.ink },
+  widgetHint: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.inkSoft, lineHeight: 18, marginBottom: 10 },
+  widgetDiag: { fontFamily: fonts.bodyRegular, fontSize: 12, color: "#C0605C", lineHeight: 16, marginBottom: 10 },
   widgetOptions: { gap: 7 },
   widgetOption: { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 13, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff" },
   widgetOptionSel: { borderColor: C.pinkDeep, backgroundColor: C.pink },
-  widgetOptionLabel: { flex: 1, fontFamily: fonts.bodySemiBold, fontSize: 13, color: C.ink },
+  widgetOptionLabel: { flex: 1, fontFamily: fonts.bodySemiBold, fontSize: 14, color: C.ink },
   radio: { width: 18, height: 18, borderRadius: 999, borderWidth: 1.5, borderColor: C.cardBorder, alignItems: "center", justifyContent: "center" },
   radioOn: { backgroundColor: C.pinkDeep, borderColor: C.pinkDeep },
   widgetSubSection: { marginTop: 12 },
-  widgetSubLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 11, letterSpacing: 1, color: C.inkSoft, marginBottom: 8 },
+  widgetSubLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 12, letterSpacing: 1, color: C.inkSoft, marginBottom: 8 },
   widgetChips: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
   widgetChip: { maxWidth: "100%", borderRadius: 999, paddingVertical: 7, paddingHorizontal: 13, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff" },
   widgetChipSel: { borderColor: C.pinkDeep, backgroundColor: C.pink },
-  widgetChipLabel: { fontFamily: fonts.bodyBold, fontSize: 12.5 },
+  widgetChipLabel: { fontFamily: fonts.bodyBold, fontSize: 13.5 },
   langWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   langBtn: { flexDirection: "row", alignItems: "center", gap: 5, borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14, borderWidth: 1, borderColor: C.cardBorder, backgroundColor: "#fff" },
   langBtnSel: { borderColor: C.pinkDeep, backgroundColor: C.pink },
-  langLabel: { fontFamily: fonts.bodyBold, fontSize: 13 },
+  langLabel: { fontFamily: fonts.bodyBold, fontSize: 14 },
   row: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: C.cardBorder },
-  rowLabel: { flex: 1, fontFamily: fonts.bodySemiBold, fontSize: 14.5, color: C.ink },
-  privacyNote: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: C.inkSoft, textAlign: "center", marginHorizontal: 12, lineHeight: 19 },
+  rowLabel: { flex: 1, fontFamily: fonts.bodySemiBold, fontSize: 15.5, color: C.ink },
+  privacyNote: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.inkSoft, textAlign: "center", marginHorizontal: 12, lineHeight: 19 },
 });

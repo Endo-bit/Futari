@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
   iconCircle: { width: 54, height: 54, borderRadius: 999, backgroundColor: C.pink, alignItems: "center", justifyContent: "center" },
   title: { fontFamily: fonts.scriptSemiBold, fontSize: 27, lineHeight: 40, paddingVertical: 2, paddingRight: 8, color: C.ink, textAlign: "center" },
-  body: { fontFamily: fonts.bodyRegular, fontSize: 14, lineHeight: 21, color: C.ink, textAlign: "center" },
+  body: { fontFamily: fonts.bodyRegular, fontSize: 15, lineHeight: 21, color: C.ink, textAlign: "center" },
   primaryBtn: {
     width: "100%",
     flexDirection: "row",
@@ -115,5 +115,5 @@ const styles = StyleSheet.create({
   },
   primaryLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
   secondaryBtn: { paddingVertical: 8 },
-  secondaryLabel: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: C.inkSoft },
+  secondaryLabel: { fontFamily: fonts.bodyBold, fontSize: 14.5, color: C.inkSoft },
 });

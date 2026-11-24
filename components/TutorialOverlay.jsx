@@ -200,9 +200,9 @@ const styles = StyleSheet.create({
   progressTrack: { height: 3, borderRadius: 999, backgroundColor: C.cardBorder, overflow: "hidden" },
   progressFill: { height: 3, borderRadius: 999, backgroundColor: C.pinkDeep },
   title: { fontFamily: fonts.scriptSemiBold, fontSize: 26, lineHeight: 36, paddingRight: 8, color: C.ink },
-  body: { fontFamily: fonts.bodyRegular, fontSize: 14, lineHeight: 20, color: C.ink },
+  body: { fontFamily: fonts.bodyRegular, fontSize: 15, lineHeight: 20, color: C.ink },
   waitingRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  waiting: { fontFamily: fonts.bodyExtraBold, fontSize: 12, color: C.pinkText },
+  waiting: { fontFamily: fonts.bodyExtraBold, fontSize: 13, color: C.pinkText },
   primaryBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -215,8 +215,8 @@ const styles = StyleSheet.create({
   },
   primaryLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
   secondaryBtn: { alignItems: "center", paddingVertical: 6 },
-  secondaryLabel: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.inkSoft },
-  skip: { fontFamily: fonts.bodySemiBold, fontSize: 12, color: C.inkSoft },
+  secondaryLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.inkSoft },
+  skip: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: C.inkSoft },
   keyboardBar: {
     position: "absolute",
     left: 0,
@@ -237,5 +237,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     ...deepShadow,
   },
-  doneLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: "#fff" },
+  doneLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
 });

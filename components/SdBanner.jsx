@@ -55,6 +55,6 @@ export default function SdBanner({ dIso }) {
 const styles = StyleSheet.create({
   banner: { flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: "#F2E1D6", borderRadius: 18, paddingVertical: 13, paddingHorizontal: 16, ...cardShadow },
   iconCircle: { width: 34, height: 34, borderRadius: 999, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
-  title: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.ink },
-  date: { fontFamily: fonts.bodyBold, fontSize: 12, color: C.pinkText },
+  title: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.ink },
+  date: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.pinkText },
 });

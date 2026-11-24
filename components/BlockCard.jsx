@@ -20,7 +20,7 @@ export default function BlockCard({ icon, title, text, placeholder, onPress }) {
 const styles = StyleSheet.create({
   card: { backgroundColor: C.card, borderWidth: 1, borderColor: C.cardBorder, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 16 },
   row: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 },
-  title: { fontFamily: fonts.bodyBold, fontSize: 14.5, color: C.ink },
-  text: { fontFamily: fonts.bodyRegular, fontSize: 14.5, lineHeight: 22, color: C.ink },
-  placeholder: { fontFamily: fonts.bodyItalic, fontSize: 14, color: C.inkSoft },
+  title: { fontFamily: fonts.bodyBold, fontSize: 15.5, color: C.ink },
+  text: { fontFamily: fonts.bodyRegular, fontSize: 15.5, lineHeight: 22, color: C.ink },
+  placeholder: { fontFamily: fonts.bodyItalic, fontSize: 15, color: C.inkSoft },
 });

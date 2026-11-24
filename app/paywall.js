@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { View, Text, Pressable, ActivityIndicator, ScrollView, StyleSheet, Platform, Linking } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, Redirect } from "expo-router";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "../lib/auth";
 import { X, Heart, Check, CalendarDays, Download, Users } from "lucide-react-native";
 import PaperBg from "../components/PaperBg";
 import SaveButton from "../components/SaveButton";
@@ -239,24 +239,24 @@ const styles = StyleSheet.create({
   body: { alignItems: "center", paddingHorizontal: 28, paddingBottom: 40, paddingTop: 6 },
   iconCircle: { width: 64, height: 64, borderRadius: 999, backgroundColor: C.pink, alignItems: "center", justifyContent: "center", marginBottom: 14 },
   title: { fontFamily: fonts.scriptBold, fontSize: 32, lineHeight: 47, paddingVertical: 3, paddingRight: 9, color: C.ink, marginBottom: 6 },
-  sub: { fontFamily: fonts.bodyRegular, fontSize: 14, color: C.inkSoft, textAlign: "center", lineHeight: 21, marginBottom: 22, maxWidth: 300 },
+  sub: { fontFamily: fonts.bodyRegular, fontSize: 15, color: C.inkSoft, textAlign: "center", lineHeight: 21, marginBottom: 22, maxWidth: 300 },
   features: { width: "100%", gap: 12, marginBottom: 22 },
-  waiting: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.pinkText, textAlign: "center", marginTop: -8, marginBottom: 18 },
+  waiting: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.pinkText, textAlign: "center", marginTop: -8, marginBottom: 18 },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.card, borderRadius: 16, padding: 14, borderWidth: 1, borderColor: C.cardBorder, ...cardShadow },
   featureIcon: { width: 30, height: 30, borderRadius: 999, backgroundColor: C.pink, alignItems: "center", justifyContent: "center" },
-  featureLabel: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.ink, flex: 1 },
+  featureLabel: { fontFamily: fonts.bodyBold, fontSize: 15, color: C.ink, flex: 1 },
   planRow: { flexDirection: "row", gap: 10, width: "100%", marginBottom: 14 },
   planBtn: { flex: 1, borderRadius: 16, paddingVertical: 12, alignItems: "center", backgroundColor: C.card, borderWidth: 1.5, borderColor: C.cardBorder },
   planBtnSel: { backgroundColor: C.pinkDeep, borderColor: C.pinkDeep },
-  planLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 14 },
-  planPrice: { fontFamily: fonts.bodyBold, fontSize: 12.5, marginTop: 2 },
+  planLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15 },
+  planPrice: { fontFamily: fonts.bodyBold, fontSize: 13.5, marginTop: 2 },
   priceCard: { width: "100%", backgroundColor: C.greenSoft, borderRadius: 18, padding: 16, alignItems: "center", marginBottom: 16 },
   priceLabel: { fontFamily: fonts.scriptBold, fontSize: 30, lineHeight: 44, paddingVertical: 3, paddingRight: 8, color: C.ink },
-  trialNote: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: C.inkSoft, textAlign: "center", marginTop: 4, lineHeight: 18 },
-  restore: { fontFamily: fonts.bodyBold, fontSize: 13, color: C.pinkText },
-  notNow: { fontFamily: fonts.bodySemiBold, fontSize: 13.5, color: C.inkSoft },
+  trialNote: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.inkSoft, textAlign: "center", marginTop: 4, lineHeight: 18 },
+  restore: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.pinkText },
+  notNow: { fontFamily: fonts.bodySemiBold, fontSize: 14.5, color: C.inkSoft },
   legalRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 16 },
-  legalLink: { fontFamily: fonts.bodyRegular, fontSize: 11.5, color: C.inkSoft, textDecorationLine: "underline" },
-  legalDivider: { fontFamily: fonts.bodyRegular, fontSize: 11.5, color: C.inkSoft },
-  unavailable: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.inkSoft, textAlign: "center" },
+  legalLink: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: C.inkSoft, textDecorationLine: "underline" },
+  legalDivider: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: C.inkSoft },
+  unavailable: { fontFamily: fonts.bodyRegular, fontSize: 14.5, color: C.inkSoft, textAlign: "center" },
 });

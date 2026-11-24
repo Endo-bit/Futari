@@ -70,10 +70,10 @@ const styles = StyleSheet.create({
   card: { alignItems: "center", backgroundColor: C.card, borderRadius: 18, borderWidth: 1, borderColor: C.cardBorder, padding: 20, gap: 8, ...cardShadow },
   lockCircle: { width: 40, height: 40, borderRadius: 999, backgroundColor: C.pink, alignItems: "center", justifyContent: "center", marginBottom: 2 },
   title: { fontFamily: fonts.bodyExtraBold, fontSize: 16, color: C.ink, textAlign: "center" },
-  body: { fontFamily: fonts.bodyRegular, fontSize: 13.5, lineHeight: 19, color: C.inkSoft, textAlign: "center" },
+  body: { fontFamily: fonts.bodyRegular, fontSize: 14.5, lineHeight: 19, color: C.inkSoft, textAlign: "center" },
   cta: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 26, marginTop: 6 },
   ctaLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: "#fff" },
   banner: { flexDirection: "row", alignItems: "center", gap: 11, backgroundColor: C.pink, borderRadius: 18, paddingVertical: 12, paddingHorizontal: 16 },
   bannerIcon: { width: 30, height: 30, borderRadius: 999, backgroundColor: "#fff", alignItems: "center", justifyContent: "center" },
-  bannerText: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: C.ink, flexShrink: 1 },
+  bannerText: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: C.ink, flexShrink: 1 },
 });

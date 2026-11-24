@@ -73,7 +73,7 @@ export default function TimeField({ value, onChange }) {
 
 const styles = StyleSheet.create({
   field: { backgroundColor: "#fff", borderRadius: 999, borderWidth: 1, borderColor: C.cardBorder, paddingVertical: 8, paddingHorizontal: 16 },
-  text: { fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: C.pinkText },
+  text: { fontFamily: fonts.bodyExtraBold, fontSize: 14.5, color: C.pinkText },
   backdrop: { flex: 1, backgroundColor: "rgba(74,64,54,0.4)", justifyContent: "flex-end" },
   sheet: { backgroundColor: C.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 16, ...cardShadow },
   doneBtn: { backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 13, alignItems: "center", marginTop: 8 },

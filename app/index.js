@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import {
-  View, Text, Image, Pressable, Modal, TextInput, ScrollView, Keyboard,
+  View, Text, Image, Pressable, TextInput, ScrollView, Keyboard,
   Platform, Animated, Easing, StyleSheet,
 } from "react-native";
-import { Redirect } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useAuth } from "@clerk/expo";
-import { AuthView } from "@clerk/expo/native";
+import { useAuth } from "../lib/auth";
+import SignInSheet from "../components/auth/SignInSheet";
 import { Heart, Lock, Bell } from "lucide-react-native";
 import FloatingHearts from "../components/FloatingHearts";
 import { C, fonts } from "../lib/theme";
@@ -17,6 +17,8 @@ import { enableReminderLocal } from "../lib/reminder";
 import { notificationAccess } from "../lib/pushNotifications";
 import { track } from "../lib/analytics";
 import { EV } from "../lib/events";
+import { saveAcquisitionSource } from "../lib/play/store";
+import { setPersonProperties } from "../lib/analytics";
 
 /* First run, before any account exists.
 
@@ -34,7 +36,11 @@ import { EV } from "../lib/events";
 
    The full walkthrough over the real app still exists, replayed from Settings. */
 
-const STEPS = ["hello", "write", "reveal", "notify", "account"];
+const STEPS = ["hello", "write", "reveal", "source", "notify", "account"];
+
+/* Where they heard about us, asked once after the reveal (the moment the app
+   has earned a tap). Shown in this order; "other" stays last. */
+const SOURCES = ["tiktok", "instagram", "youtube", "x", "appstore", "friend", "partner", "other"];
 
 /** The keyboard's height while it's up, 0 otherwise. The write step lays itself
     out against this directly: a KeyboardAvoidingView around a ScrollView left
@@ -98,6 +104,7 @@ function Page({ who, text, sealed, sealedLabel, tint }) {
 export default function Onboarding() {
   const { isSignedIn, isLoaded } = useAuth();
   const { t } = useApp();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const keyboard = useKeyboardHeight();
 
@@ -106,6 +113,7 @@ export default function Onboarding() {
   const [revealed, setRevealed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState("signUp");
   const [inviteSeen, setInviteSeen] = useState(null);
 
   const fade = useRef(new Animated.Value(1)).current;
@@ -153,6 +161,7 @@ export default function Onboarding() {
   const openAuth = (cta) => {
     track(EV.SIGNIN_STARTED, { cta, step: id });
     if (cta === "create_account") track(EV.ONBOARDING_SIGNUP_OPENED);
+    setAuthMode(cta === "log_in" ? "signIn" : "signUp");
     setAuthOpen(true);
   };
 
@@ -168,6 +177,17 @@ export default function Onboarding() {
     setRevealed(true);
     track(EV.ONBOARDING_REVEALED);
     Animated.timing(partnerFade, { toValue: 1, duration: 600, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+  };
+
+  const pickSource = (source) => {
+    if (source) {
+      saveAcquisitionSource(source);
+      track(EV.ACQ_SOURCE_PICKED, { source });
+      setPersonProperties({ acquisition_source: source });
+    } else {
+      track(EV.ACQ_SOURCE_PICKED, { source: "skipped" });
+    }
+    goTo(step + 1);
   };
 
   const notify = async (provisional) => {
@@ -205,7 +225,12 @@ export default function Onboarding() {
         <Text style={styles.body}>{t.obHelloBody}</Text>
       </View>
     );
-    footer = <PrimaryButton label={t.obHelloCta} onPress={() => goTo(1)} />;
+    footer = (
+      <>
+        <PrimaryButton label={t.obHelloCta} onPress={() => goTo(1)} />
+        <TextButton label={`${t.plHubTitle} →`} onPress={() => router.push("/play")} />
+      </>
+    );
   } else if (id === "write") {
     const typing = keyboard > 0;
     body = (
@@ -250,6 +275,21 @@ export default function Onboarding() {
     ) : (
       <PrimaryButton label={t.obRevealCta} onPress={reveal} icon={<Heart size={16} color="#fff" fill="#fff" />} />
     );
+  } else if (id === "source") {
+    body = (
+      <View style={{ gap: 14 }}>
+        <Text style={styles.title}>{t.obSrcTitle}</Text>
+        <Text style={styles.bodyLeft}>{t.obSrcBody}</Text>
+        <View style={styles.srcGrid}>
+          {SOURCES.map((s) => (
+            <Pressable key={s} onPress={() => pickSource(s)} style={({ pressed }) => [styles.srcChip, pressed && styles.srcChipOn]} accessibilityRole="button">
+              <Text style={styles.srcLabel}>{t.obSrc[s]}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    );
+    footer = <TextButton label={t.obSrcSkip} onPress={() => pickSource(null)} />;
   } else if (id === "notify") {
     body = (
       <View style={styles.center}>
@@ -325,9 +365,7 @@ export default function Onboarding() {
 
       <FloatingHearts active={revealed && id === "reveal"} />
 
-      <Modal visible={authOpen} animationType="slide" onRequestClose={() => setAuthOpen(false)}>
-        <AuthView onDismiss={() => setAuthOpen(false)} />
-      </Modal>
+      {authOpen && <SignInSheet visible initialMode={authMode} onClose={() => setAuthOpen(false)} />}
     </View>
   );
 }
@@ -339,7 +377,7 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: "rgba(120,100,70,0.18)" },
   dotOn: { width: 18, backgroundColor: C.pinkDeep },
   dotDone: { backgroundColor: C.pinkDeep },
-  login: { fontFamily: fonts.bodyBold, fontSize: 14, color: C.inkSoft },
+  login: { fontFamily: fonts.bodyBold, fontSize: 15, color: C.inkSoft },
   content: { flexGrow: 1, paddingHorizontal: 28, paddingTop: 20, paddingBottom: 24, maxWidth: 480, width: "100%", alignSelf: "center" },
   center: { alignItems: "center", gap: 14 },
   footer: { paddingHorizontal: 28, paddingTop: 8, gap: 4, maxWidth: 480, width: "100%", alignSelf: "center" },
@@ -354,32 +392,36 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.scriptBold, fontSize: 36, lineHeight: 46, paddingTop: 4, paddingRight: 12, color: C.ink, textAlign: "center" },
   body: { fontFamily: fonts.bodyRegular, fontSize: 15.5, lineHeight: 24, color: C.inkSoft, textAlign: "center", maxWidth: 340 },
   bodyLeft: { fontFamily: fonts.bodyRegular, fontSize: 15, lineHeight: 23, color: C.inkSoft, textAlign: "center" },
-  kicker: { fontFamily: fonts.bodyExtraBold, fontSize: 11.5, letterSpacing: 1.4, color: C.pinkText, marginTop: 12 },
+  kicker: { fontFamily: fonts.bodyExtraBold, fontSize: 12.5, letterSpacing: 1.4, color: C.pinkText, marginTop: 12 },
   prompt: { fontFamily: fonts.scriptSemiBold, fontSize: 32, lineHeight: 44, paddingRight: 10, color: C.ink },
   promptTyping: { fontFamily: fonts.scriptSemiBold, fontSize: 24, lineHeight: 34, paddingRight: 10, color: C.ink },
   promptSmall: { fontFamily: fonts.scriptSemiBold, fontSize: 22, lineHeight: 32, paddingRight: 8, color: C.ink, marginTop: 6 },
   paper: { backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: "rgba(120,100,70,0.12)", paddingHorizontal: 16, paddingVertical: 12 },
   input: { minHeight: 110, fontFamily: fonts.bodyRegular, fontSize: 16.5, lineHeight: 25, color: C.ink, textAlignVertical: "top" },
-  hint: { fontFamily: fonts.bodyRegular, fontSize: 13.5, lineHeight: 20, color: C.inkSoft },
+  hint: { fontFamily: fonts.bodyRegular, fontSize: 14.5, lineHeight: 20, color: C.inkSoft },
 
   page: { backgroundColor: C.card, borderRadius: 14, borderWidth: 1, borderColor: "rgba(120,100,70,0.10)", borderLeftWidth: 4, paddingVertical: 14, paddingHorizontal: 16, gap: 6 },
-  pageWho: { fontFamily: fonts.bodyExtraBold, fontSize: 12, letterSpacing: 0.6, color: C.inkSoft },
+  pageWho: { fontFamily: fonts.bodyExtraBold, fontSize: 13, letterSpacing: 0.6, color: C.inkSoft },
   pageText: { fontFamily: fonts.bodyRegular, fontSize: 15.5, lineHeight: 23, color: C.ink },
   sealedRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6 },
-  sealedText: { fontFamily: fonts.bodyItalic, fontSize: 14, color: C.inkSoft },
+  sealedText: { fontFamily: fonts.bodyItalic, fontSize: 15, color: C.inkSoft },
 
   bellCircle: { width: 64, height: 64, borderRadius: 32, backgroundColor: C.pink, alignItems: "center", justifyContent: "center", marginBottom: 4 },
   banner: { flexDirection: "row", gap: 10, alignItems: "flex-start", backgroundColor: "rgba(255,255,255,0.92)", borderRadius: 18, padding: 12, width: "100%", maxWidth: 360, marginTop: 14, borderWidth: 1, borderColor: "rgba(120,100,70,0.08)" },
   bannerIcon: { width: 34, height: 34, borderRadius: 8 },
-  bannerApp: { fontFamily: fonts.bodyBold, fontSize: 11, letterSpacing: 0.5, color: C.inkSoft },
-  bannerTime: { fontFamily: fonts.bodyRegular, fontSize: 11, color: C.inkSoft },
-  bannerTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: C.ink, marginTop: 2 },
-  bannerBody: { fontFamily: fonts.bodyRegular, fontSize: 13.5, lineHeight: 19, color: C.ink },
+  bannerApp: { fontFamily: fonts.bodyBold, fontSize: 12, letterSpacing: 0.5, color: C.inkSoft },
+  bannerTime: { fontFamily: fonts.bodyRegular, fontSize: 12, color: C.inkSoft },
+  bannerTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: C.ink, marginTop: 2 },
+  bannerBody: { fontFamily: fonts.bodyRegular, fontSize: 14.5, lineHeight: 19, color: C.ink },
 
   primary: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: C.pinkDeep, borderRadius: 999, paddingVertical: 16 },
   primaryOff: { backgroundColor: "#E9DFD2" },
   primaryLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 16, color: "#fff" },
   textBtn: { alignItems: "center", paddingVertical: 12 },
-  textBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 14.5, color: C.inkSoft },
-  note: { fontFamily: fonts.bodyRegular, fontSize: 12.5, color: C.inkSoft, textAlign: "center", paddingVertical: 8 },
+  textBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 15.5, color: C.inkSoft },
+  srcGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, justifyContent: "center", marginTop: 6 },
+  srcChip: { paddingVertical: 13, paddingHorizontal: 18, borderRadius: 999, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.cardBorder },
+  srcChipOn: { borderColor: C.pinkDeep, backgroundColor: "#FFF6F7" },
+  srcLabel: { fontFamily: fonts.bodyBold, fontSize: 16, color: C.ink },
+  note: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.inkSoft, textAlign: "center", paddingVertical: 8 },
 });

@@ -2,10 +2,9 @@ import { View } from "react-native";
 import { Tabs, Redirect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { House, PenLine, CalendarDays, Settings } from "lucide-react-native";
-import { useAuth } from "@clerk/expo";
+import { useAuth } from "../../lib/auth";
 import { C, fonts } from "../../lib/theme";
 import { useApp } from "../../lib/appState";
-import ToastView from "../../components/Toast";
 import TrialNotice from "../../components/TrialNotice";
 
 export default function TabsLayout() {
@@ -26,7 +25,7 @@ export default function TabsLayout() {
           tabBarActiveTintColor: C.pinkText,
           tabBarInactiveTintColor: C.inkSoft,
           tabBarStyle: { backgroundColor: C.paper, borderTopColor: C.line },
-          tabBarLabelStyle: { fontFamily: fonts.bodyExtraBold, fontSize: 11 },
+          tabBarLabelStyle: { fontFamily: fonts.bodyExtraBold, fontSize: 12 },
         }}
       >
         <Tabs.Screen
@@ -47,7 +46,6 @@ export default function TabsLayout() {
         />
       </Tabs>
 
-      <ToastView />
       <TrialNotice />
     </SafeAreaView>
   );

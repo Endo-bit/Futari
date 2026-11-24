@@ -29,6 +29,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.cardBorder,
   },
-  tag: { fontFamily: fonts.bodyExtraBold, fontSize: 10.5, letterSpacing: 1, marginBottom: 5 },
-  text: { fontFamily: fonts.bodyRegular, fontSize: 13.5, lineHeight: 20, color: C.ink },
+  tag: { fontFamily: fonts.bodyExtraBold, fontSize: 11.5, letterSpacing: 1, marginBottom: 5 },
+  text: { fontFamily: fonts.bodyRegular, fontSize: 14.5, lineHeight: 20, color: C.ink },
 });

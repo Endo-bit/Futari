@@ -119,5 +119,5 @@ const styles = StyleSheet.create({
   preview: { alignItems: "center", paddingVertical: 6, paddingBottom: 14 },
   actions: { paddingTop: 4, gap: 4 },
   textBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 12 },
-  textBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 13.5, color: C.pinkText },
+  textBtnLabel: { fontFamily: fonts.bodyBold, fontSize: 14.5, color: C.pinkText },
 });

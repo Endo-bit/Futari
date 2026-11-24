@@ -31,7 +31,7 @@ export { MOODS };
 
 const styles = StyleSheet.create({
   wrap: { alignItems: "center", marginTop: 4 },
-  label: { fontFamily: fonts.bodySemiBold, fontSize: 12, color: C.inkSoft, marginBottom: 8 },
+  label: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: C.inkSoft, marginBottom: 8 },
   row: { flexDirection: "row", gap: 14 },
   btn: { width: 46, height: 46, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: C.card, borderWidth: 1, borderColor: C.cardBorder },
   btnSel: { backgroundColor: C.pink, borderWidth: 2, borderColor: C.pinkDeep },

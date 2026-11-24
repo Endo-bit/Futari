@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 13,
   },
-  text: { fontFamily: fonts.bodyRegular, fontSize: 14, color: C.ink },
+  text: { fontFamily: fonts.bodyRegular, fontSize: 15, color: C.ink },
   placeholder: { color: "#B3A794", fontFamily: fonts.bodyItalic },
   backdrop: { flex: 1, backgroundColor: "rgba(74,64,54,0.4)", justifyContent: "flex-end" },
   sheet: { backgroundColor: C.card, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 16, ...cardShadow },
