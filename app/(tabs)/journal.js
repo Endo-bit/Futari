@@ -180,7 +180,7 @@ export default function JournalScreen() {
                       <Pressable
                         key={i}
                         disabled={isFuture}
-                        onPress={() => (isToday ? router.push("/(tabs)/today") : router.push(`/entry/${dIso}`))}
+                        onPress={() => (isToday && !filled ? router.push("/(tabs)/today") : router.push(`/entry/${dIso}`))}
                         style={[styles.cell, isToday && styles.cellToday, filled && styles.cellFilled]}
                       >
                         <Text style={[styles.cellText, isFuture && styles.cellTextFuture, filled && styles.cellTextFilled]}>{day}</Text>

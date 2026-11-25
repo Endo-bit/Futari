@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Heart, PenLine, Check, ChevronRight } from "lucide-react-native";
+import { Heart, PenLine, Check, ChevronRight, MessageCircle } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import KeyboardScrollView from "../../components/KeyboardScrollView";
 import ModeToggle from "../../components/ModeToggle";
@@ -16,10 +16,11 @@ import { promptFor, quizFor } from "../../lib/dailyContent";
 import { useTutorialScrollProps } from "../../components/TutorialTarget";
 import { track } from "../../lib/analytics";
 import { EV } from "../../lib/events";
+import { useCommentNotice } from "../../lib/comments";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { t, lang, today, todayIso, me, setMe, mode, api, streak, pairToday, setPairToday, refreshPairToday, partnerName, myName, describeQuizChoice, showToast, getEntry } = useApp();
+  const { t, lang, today, todayIso, me, setMe, mode, api, isDemo, streak, pairToday, setPairToday, refreshPairToday, partnerName, myName, describeQuizChoice, showToast, getEntry } = useApp();
   const scrollProps = useTutorialScrollProps();
   const [startDateFormOpen, setStartDateFormOpen] = useState(false);
   const [draftStartDate, setDraftStartDate] = useState(me?.startDate || null);
@@ -42,9 +43,12 @@ export default function HomeScreen() {
   };
 
   const todayEntry = getEntry(todayIso);
+  // Saved pages are finished: the "write today's page" button goes quiet.
+  const savedToday = !isDemo && !!(todayEntry.happy || todayEntry.mind || todayEntry.next || todayEntry.promptAnswer);
   const prompt = promptFor(t, mode, todayIso, todayEntry);
   const quizQ = quizFor(t, todayIso, pairToday?.mine);
   const showCouple = mode === "pair" && !!me?.pairId;
+  const comment = useCommentNotice({ spaceId: me?.pairSpaceId, dateIso: todayIso, pairDay: pairToday });
   const daysTogether = me?.startDate ? Math.floor((today - fromIso(me.startDate)) / 86400000) : null;
 
   const myQuiz = pairToday?.mine?.quizChoice || null;
@@ -93,6 +97,8 @@ export default function HomeScreen() {
      is being typed in, so a refresh can't swap the text under the cursor. */
   const refreshShared = useCallback(() => {
     if (!me?.pairId || TextInput.State?.currentlyFocusedInput?.()) return;
+    // Today's pages and comments too, for the "a comment came in" banner.
+    refreshPairToday?.().catch?.(() => {});
     api
       .getMe()
       .then((data) => {
@@ -106,7 +112,7 @@ export default function HomeScreen() {
         });
       })
       .catch(() => {});
-  }, [me?.pairId, api, setMe]);
+  }, [me?.pairId, api, setMe, refreshPairToday]);
   useFocusEffect(
     useCallback(() => {
       refreshShared();
@@ -160,6 +166,25 @@ export default function HomeScreen() {
               <ChevronRight size={18} color={C.pinkText} />
             </Pressable>
           )}
+          {showCouple && comment.unseen && (
+            <Pressable onPress={() => comment.markSeen()} style={styles.commentBanner} accessibilityRole="button">
+              <MessageCircle size={20} color="#fff" />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.commentTitle}>{t.pgCommentArrived}</Text>
+                <Text style={styles.commentAsk}>{t.pgCommentAsk}</Text>
+              </View>
+              <Text style={styles.commentSee}>{t.pgCommentSee}</Text>
+            </Pressable>
+          )}
+          {showCouple && comment.visible && (
+            <Pressable onPress={() => router.push("/(tabs)/today")} style={styles.commentCard} accessibilityRole="button">
+              <Text style={styles.commentFrom}>{t.pgCommentFrom.replace("{n}", partnerName)}</Text>
+              {!!pairToday?.partnerReply && <Text style={styles.commentText}>{pairToday.partnerReply}</Text>}
+              {(pairToday?.partnerReactions || []).length > 0 && (
+                <Text style={styles.commentText}>{(pairToday.partnerReactions || []).map((r) => ({ heart: "♥", smile: "☺", clover: "☘" }[r] || "♥")).join(" ")}</Text>
+              )}
+            </Pressable>
+          )}
           <PlaneInbox />
           <HomePlayCard />
 
@@ -183,7 +208,12 @@ export default function HomeScreen() {
               </View>
             )}
             <View style={{ marginTop: 14 }}>
-              <SaveButton onPress={() => router.push("/(tabs)/today")} label={t.homeWriteCta} icon={<PenLine size={16} color="#fff" />} />
+              <SaveButton
+                onPress={() => router.push("/(tabs)/today")}
+                disabled={savedToday}
+                label={savedToday ? t.pgHomeWritten : t.homeWriteCta}
+                icon={savedToday ? <Check size={16} color={C.inkSoft} /> : <PenLine size={16} color="#fff" />}
+              />
             </View>
           </View>
 
@@ -351,6 +381,13 @@ const styles = StyleSheet.create({
   textCard: { backgroundColor: C.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: C.cardBorder },
   textCardLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 12, letterSpacing: 1.2, color: C.inkSoft, marginBottom: 8 },
   textarea: { minHeight: 44, backgroundColor: C.paper, borderRadius: 10, padding: 11, fontFamily: fonts.bodyRegular, fontSize: 14.5, color: C.ink, textAlignVertical: "top" },
+  commentBanner: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.pinkDeep, borderRadius: 18, paddingVertical: 14, paddingHorizontal: 16 },
+  commentTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 16, color: "#fff" },
+  commentAsk: { fontFamily: fonts.bodyRegular, fontSize: 14.5, color: "#fff" },
+  commentSee: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: C.pinkDeep, backgroundColor: "#fff", borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14, overflow: "hidden" },
+  commentCard: { backgroundColor: C.pink, borderRadius: 18, padding: 16, gap: 6 },
+  commentFrom: { fontFamily: fonts.bodyExtraBold, fontSize: 14, color: C.pinkText },
+  commentText: { fontFamily: fonts.bodyRegular, fontSize: 16, lineHeight: 23, color: C.ink },
   promptCard: { backgroundColor: C.card, borderRadius: 18, padding: 18, borderWidth: 1, borderColor: C.cardBorder },
   promptLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 12, letterSpacing: 1.2, color: C.pinkText, marginBottom: 4 },
   promptText: { fontFamily: fonts.scriptSemiBold, fontSize: 24, color: C.ink, lineHeight: 36, paddingVertical: 3, paddingRight: 7 },

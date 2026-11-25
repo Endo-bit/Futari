@@ -3,14 +3,14 @@
     "name": "Futari",
     "slug": "FutariMobile",
     "scheme": "futari",
-    "version": "1.0.8",
+    "version": "1.0.9",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.futarimobile.app",
-      "buildNumber": "56",
+      "buildNumber": "57",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleLocalizations": ["en", "es", "fr", "de", "it", "ja", "pt-BR", "zh-Hans", "id", "ko"]

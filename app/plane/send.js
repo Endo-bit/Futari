@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { View, Text, Pressable, Animated, Easing, PanResponder, Dimensions, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { X } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import { PaperStage } from "../../components/plane/PaperShapes";
@@ -69,6 +70,7 @@ export default function SendPlane() {
       .sendPlane(String(spaceId || ""), String(date || ""))
       .then(() => {
         track(EV.PLANE_SENT);
+        AsyncStorage.setItem(`futari_plane_sent_${String(date || "")}`, "1").catch(() => {});
         setTimeout(() => {
           showToast(t.plSent.replace("{n}", partnerName), "heart");
           router.back();
@@ -76,7 +78,12 @@ export default function SendPlane() {
       })
       .catch((err) => {
         // Toasts live in the tab bar's layout, which this screen covers.
-        setError(err?.message === "NOT_PAIRED" ? t.plPlaneNeedsPair : t.plErrNet);
+        if (err?.message === "ALREADY_SENT") {
+          AsyncStorage.setItem(`futari_plane_sent_${String(date || "")}`, "1").catch(() => {});
+          setError(t.pgPlaneSent);
+        } else {
+          setError(err?.message === "NOT_PAIRED" ? t.plPlaneNeedsPair : t.plErrNet);
+        }
         fly.setValue(0);
         setP("throw");
       });

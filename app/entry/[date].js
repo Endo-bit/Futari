@@ -3,11 +3,12 @@ import { View, Text, Pressable, ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter, Redirect } from "expo-router";
 import { useAuth } from "../../lib/auth";
-import { ChevronLeft, Moon, Smile, Meh, Heart, Smile as SmileIcon, Clover, Share2, Send } from "lucide-react-native";
+import { ChevronLeft, Moon, Smile, Meh, Heart, Smile as SmileIcon, Clover, Share2, Send, PenLine } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import SdBanner from "../../components/SdBanner";
 import { PairFieldCards } from "../../components/FieldCard";
 import ShareSheet from "../../components/ShareSheet";
+import EditPageSheet from "../../components/EditPageSheet";
 import LockedPage from "../../components/LockedPage";
 import { C, fonts, cardShadow } from "../../lib/theme";
 import { track } from "../../lib/analytics";
@@ -43,7 +44,7 @@ export default function EntryDetail() {
   const { date } = useLocalSearchParams();
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { t, lang, getEntry, mode, spaceId, me, refreshMe, partnerName, myName, describeQuizChoice, api, freeRevealsLeft } = useApp();
+  const { t, lang, getEntry, mode, spaceId, isPremium, me, refreshMe, partnerName, myName, describeQuizChoice, api, freeRevealsLeft } = useApp();
   const insets = useSafeAreaInsets();
 
   const e = getEntry(date);
@@ -57,6 +58,16 @@ export default function EntryDetail() {
   const wroteSomething = !!(e.happy || e.mind || e.next || e.promptAnswer);
 
   const [shareOpen, setShareOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  // Editing a saved page is Premium (either partner's subscription counts).
+  const canEdit = isPremium || !!me?.premiumActive;
+  const startEdit = () => {
+    if (canEdit) setEditOpen(true);
+    else {
+      track(EV.PAYWALL_VIEWED, { source: "edit_page", where: "calendar" });
+      router.push("/paywall");
+    }
+  };
   const [pastPairData, setPastPairData] = useState(null);
   useEffect(() => {
     if (mode !== "pair" || !me?.pairSpaceId) {
@@ -128,6 +139,13 @@ export default function EntryDetail() {
 
         <PairFieldCards entry={e} t={t} />
 
+        {wroteSomething && (
+          <Pressable onPress={startEdit} style={styles.editBtn} accessibilityRole="button">
+            <PenLine size={16} color={canEdit ? C.pinkText : C.inkSoft} />
+            <Text style={[styles.editBtnLabel, !canEdit && { color: C.inkSoft }]}>{canEdit ? t.pgEditPage : `${t.pgEditPage} · Premium`}</Text>
+          </Pressable>
+        )}
+
         {MoodIcon && (
           <View style={{ alignItems: "center" }}>
             <View style={styles.moodBadge}>
@@ -182,6 +200,13 @@ export default function EntryDetail() {
         )}
       </ScrollView>
 
+      <EditPageSheet
+        visible={editOpen}
+        onClose={() => setEditOpen(false)}
+        dateIso={date}
+        entry={e}
+        onPremiumRequired={() => router.push("/paywall")}
+      />
       <ShareSheet
         visible={shareOpen}
         onClose={() => setShareOpen(false)}
@@ -195,6 +220,8 @@ export default function EntryDetail() {
 }
 
 const styles = StyleSheet.create({
+  editBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, borderRadius: 999, borderWidth: 1.5, borderColor: C.pinkDeep, backgroundColor: C.card },
+  editBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.pinkText },
   header: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 6 },
   shareBtn: { marginLeft: "auto", width: 34, height: 34, borderRadius: 999, alignItems: "center", justifyContent: "center", backgroundColor: C.pink },
   title: { fontFamily: fonts.scriptSemiBold, fontSize: 28, lineHeight: 42, paddingVertical: 3, paddingRight: 8, color: C.ink },

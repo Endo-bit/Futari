@@ -1,10 +1,11 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   View, Text, TextInput, Pressable, ScrollView, Keyboard,
   KeyboardAvoidingView, Platform, StyleSheet,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { Sun, Cloud, Heart, Smile, Clover, Check, Share2, Send } from "lucide-react-native";
+import { useRouter, useFocusEffect } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Sun, Cloud, Heart, Smile, Clover, Check, Share2, Send, PenLine, MessageCircle } from "lucide-react-native";
 import PaperBg from "../../components/PaperBg";
 import KeyboardScrollView from "../../components/KeyboardScrollView";
 import ModeToggle from "../../components/ModeToggle";
@@ -28,6 +29,8 @@ import { maybeRequestReviewAfterFirstReveal } from "../../lib/reviewPrompt";
 import { signalTutorial } from "../../lib/tutorialBus";
 import { track } from "../../lib/analytics";
 import { EV } from "../../lib/events";
+import { useDraft, draftComplete, DRAFT_FIELDS } from "../../lib/draft";
+import { useCommentNotice, commentSignature } from "../../lib/comments";
 
 function ReactionIcons({ ids }) {
   return (
@@ -67,6 +70,65 @@ export default function TodayScreen() {
 
   const e = getEntry(todayIso);
 
+  /* Writing happens in a draft on this phone; "Save" sends the whole page at
+     once and then the page is finished: read-only here, editable from the
+     calendar on Premium. The guided tour's demo pair keeps the old instant
+     saves (it is a rehearsal, nothing is sent). */
+  const drafting = !isDemo;
+  const { draft, setField, clear: clearDraft } = useDraft(spaceId, todayIso);
+  const saved = drafting && !!(e.happy || e.mind || e.next || e.promptAnswer);
+  const v = drafting && !saved ? { ...e, ...draft } : e;
+  const [promptLive, setPromptLive] = useState(null);
+  const setValue = (field, value) => {
+    if (!drafting) {
+      patchToday({ [field]: value });
+      return;
+    }
+    setField(field, value);
+    if (value) signalTutorial(`wrote:${field}`);
+  };
+  const complete = draftComplete({ ...draft, ...(promptLive !== null ? { promptAnswer: promptLive } : {}) });
+
+  /* One paper plane per page: remembered here, and the server refuses a second. */
+  const planeKey = `futari_plane_sent_${todayIso}`;
+  const [planeSent, setPlaneSent] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      AsyncStorage.getItem(planeKey).then((x) => setPlaneSent(x === "1")).catch(() => {});
+    }, [planeKey])
+  );
+
+  /* A partner's comment, announced if it came after the page was opened. */
+  const comment = useCommentNotice({ spaceId: me?.pairSpaceId, dateIso: todayIso, pairDay: pairToday });
+  const justRevealed = useRef(false);
+  useEffect(() => {
+    if (justRevealed.current && pairToday?.revealed) {
+      justRevealed.current = false;
+      const sig = commentSignature(pairToday);
+      if (sig) comment.markSeen(sig);
+    }
+  }, [pairToday]); // eslint-disable-line
+
+  /* Keep the partner's side fresh while this page is open: their writing, the
+     reveal, and comments, every 20 seconds while the app is in front. */
+  useFocusEffect(
+    useCallback(() => {
+      if (!me?.pairSpaceId || isDemo) return undefined;
+      refreshPairToday().catch(() => {});
+      const timer = setInterval(() => refreshPairToday().catch(() => {}), 20000);
+      return () => clearInterval(timer);
+    }, [me?.pairSpaceId, isDemo]) // eslint-disable-line
+  );
+
+  const scrollRef = useRef(null);
+  const setScrollRef = useCallback(
+    (node) => {
+      scrollRef.current = node;
+      scrollProps.ref?.(node);
+    },
+    [scrollProps]
+  );
+
   /* The prompt's answer box is uncontrolled, so it reads `defaultValue` once, when
      it mounts. `promptShown` is what the box is showing; whenever the entry under
      it becomes something the box didn't produce — the demo pair starting or
@@ -74,14 +136,15 @@ export default function TodayScreen() {
      went on showing the other page's text, and the next blur or save wrote that
      text into this page. */
   const promptDraft = useRef(null);
-  const promptShown = useRef(e.promptAnswer || "");
+  const promptShown = useRef(v.promptAnswer || "");
   const [promptBoxKey, setPromptBoxKey] = useState(0);
   useEffect(() => {
-    if ((e.promptAnswer || "") === promptShown.current) return;
-    promptShown.current = e.promptAnswer || "";
+    if ((v.promptAnswer || "") === promptShown.current) return;
+    promptShown.current = v.promptAnswer || "";
     promptDraft.current = null;
+    setPromptLive(null);
     setPromptBoxKey((k) => k + 1);
-  }, [e.promptAnswer, todayIso, mode, isDemo]);
+  }, [v.promptAnswer, todayIso, mode, isDemo]);
 
   /* The full-screen editors sit above the tour and bring their own keyboard;
      tell it, so it doesn't rearrange this page for a box that isn't on it. */
@@ -122,7 +185,10 @@ export default function TodayScreen() {
       track(EV.FREE_OPEN_USED, { where: "today" });
       refreshMe();
     }
+    justRevealed.current = true;
     await refreshPairToday();
+    // Opening the pages is the moment to read from the top.
+    scrollRef.current?.scrollTo?.({ y: 0, animated: true });
     setHearts(true);
     showToast(t.revealedToast, "heart");
     setTimeout(() => setHearts(false), 2400);
@@ -136,8 +202,32 @@ export default function TodayScreen() {
 
   const handleSave = () => {
     Keyboard.dismiss();
-    const draft = promptDraft.current;
-    if (draft !== null && draft !== e.promptAnswer) patchToday({ promptAnswer: draft });
+    if (!drafting) {
+      const typed = promptDraft.current;
+      if (typed !== null && typed !== e.promptAnswer) patchToday({ promptAnswer: typed });
+      showToast(t.savedToast);
+      signalTutorial("saved");
+      return;
+    }
+    if (saved) return;
+    const merged = { ...draft, ...(promptDraft.current !== null ? { promptAnswer: promptDraft.current } : {}) };
+    if (!draftComplete(merged)) {
+      showToast(t.pgNeedAll, "info");
+      // The tour only asks for a couple of parts; let its "press Save" step
+      // pass without finishing (and locking) a half-written page.
+      if (touring) signalTutorial("saved");
+      return;
+    }
+    const patch = {};
+    for (const f of DRAFT_FIELDS) {
+      const val = merged[f];
+      if (val !== undefined && val !== null && val !== "") patch[f] = typeof val === "string" ? val.trim() : val;
+    }
+    // savedAt tells the server the page is finished: only now is the partner told.
+    patchToday({ ...patch, savedAt: Date.now() });
+    clearDraft();
+    promptDraft.current = null;
+    setPromptLive(null);
     showToast(t.savedToast);
     signalTutorial("saved");
   };
@@ -173,7 +263,7 @@ export default function TodayScreen() {
     <PaperBg style={{ position: "relative" }}>
       {/* Extra room at the bottom during the tour, so even the last control on
           the page can be scrolled up clear of the bubble and the keyboard. */}
-      <KeyboardScrollView {...scrollProps} contentContainerStyle={{ paddingBottom: touring ? 260 : 40 }}>
+      <KeyboardScrollView {...scrollProps} ref={setScrollRef} contentContainerStyle={{ paddingBottom: touring ? 260 : 40 }}>
         <View style={styles.headerRow}>
           <Text style={styles.h1}>{t.todaysPage}</Text>
           <Text style={styles.dateLabel}>{dateLabel(today, t, lang)}</Text>
@@ -212,7 +302,17 @@ export default function TodayScreen() {
                     <PairFieldCards entry={pairToday.partner} t={t} />
                   </TutorialTarget>
 
-                  {(pairToday.partnerReply || pairToday.partnerReactions?.length > 0) && (
+                  {comment.unseen && (
+                    <Pressable onPress={() => comment.markSeen()} style={styles.commentBanner} accessibilityRole="button">
+                      <MessageCircle size={20} color="#fff" />
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.commentTitle}>{t.pgCommentArrived}</Text>
+                        <Text style={styles.commentAsk}>{t.pgCommentAsk}</Text>
+                      </View>
+                      <Text style={styles.commentSee}>{t.pgCommentSee}</Text>
+                    </Pressable>
+                  )}
+                  {comment.visible && (
                     <ResponseCard name={partnerName} reply={pairToday.partnerReply} reactions={pairToday.partnerReactions} bg={C.pink} />
                   )}
 
@@ -268,20 +368,35 @@ export default function TodayScreen() {
                 </>
               ) : (
                 <>
+                {saved ? (
+                <>
+                  <View style={styles.promptCard}>
+                    <Text style={styles.promptLabel}>{t.littlePrompt}</Text>
+                    <Text style={styles.promptText}>{prompt}</Text>
+                  </View>
+                  <PairFieldCards entry={e} t={t} />
+                  <Pressable onPress={() => router.push(`/entry/${todayIso}`)} style={styles.editLink} accessibilityRole="button">
+                    <PenLine size={15} color={C.inkSoft} />
+                    <Text style={styles.editLinkLabel}>{t.pgEditInCalendar}</Text>
+                  </Pressable>
+                </>
+                ) : (
+                <>
                   <TutorialTarget id="today.prompt" style={styles.promptCard}>
                     <Text style={styles.promptLabel}>{t.littlePrompt}</Text>
                     <Text style={styles.promptText}>{prompt}</Text>
                     <TextInput
                       key={promptBoxKey}
-                      defaultValue={e.promptAnswer}
+                      defaultValue={v.promptAnswer}
                       onChangeText={(text) => {
                         promptDraft.current = text;
                         promptShown.current = text;
+                        setPromptLive(text);
                       }}
                       onBlur={() => {
                         // From the draft, not the event: Android's blur carries no text.
                         const text = promptDraft.current;
-                        if (text !== null && text !== e.promptAnswer) patchToday({ promptAnswer: text });
+                        if (text !== null && text !== v.promptAnswer) setValue("promptAnswer", text);
                       }}
                       placeholder={t.promptAnswerPh}
                       placeholderTextColor="#B3A794"
@@ -291,25 +406,25 @@ export default function TodayScreen() {
                   </TutorialTarget>
 
                   <TutorialTarget id="today.happy">
-                    <BlockCard icon={<Sun size={19} color={C.sun} />} title={t.happy} text={e.happy} placeholder={t.happyPh} onPress={() => setEditingField("happy")} />
+                    <BlockCard icon={<Sun size={19} color={C.sun} />} title={t.happy} text={v.happy} placeholder={t.happyPh} onPress={() => setEditingField("happy")} />
                   </TutorialTarget>
                   <TutorialTarget id="today.mind">
-                    <BlockCard icon={<Cloud size={19} color={C.blue} />} title={t.mind} text={e.mind} placeholder={t.mindPh} onPress={() => setMindOpen(true)} />
+                    <BlockCard icon={<Cloud size={19} color={C.blue} />} title={t.mind} text={v.mind} placeholder={t.mindPh} onPress={() => setMindOpen(true)} />
                   </TutorialTarget>
                   <BlockCard
                     icon={<Heart size={19} color={C.green} />}
                     title={mode === "personal" ? t.nextSolo : t.next}
-                    text={e.next}
+                    text={v.next}
                     placeholder={mode === "personal" ? t.nextSoloPh : t.nextPh}
                     onPress={() => setEditingField("next")}
                   />
 
                   <TutorialTarget id="today.mood">
                     <MoodPicker
-                      value={e.mood}
+                      value={v.mood}
                       label={t.mood}
                       onChange={(id) => {
-                        patchToday({ mood: id });
+                        setValue("mood", id);
                         if (id) {
                           showToast(t.moodToast, "heart");
                           signalTutorial("mood");
@@ -318,19 +433,29 @@ export default function TodayScreen() {
                       }}
                     />
                   </TutorialTarget>
+                </>
+                )}
 
                   <TutorialTarget id="today.save">
-                    <SaveButton onPress={handleSave} label={t.save} icon={<Check size={18} color="#fff" />} />
+                    <SaveButton
+                      onPress={handleSave}
+                      disabled={drafting && (saved || (!complete && !touring))}
+                      label={saved ? t.pgSavedDone : t.save}
+                      icon={<Check size={18} color={drafting && (saved || (!complete && !touring)) ? C.inkSoft : "#fff"} />}
+                    />
+                    {drafting && !saved && !complete && <Text style={styles.needAll}>{t.pgNeedAll}</Text>}
                   </TutorialTarget>
 
-                  {wrote && !!me?.pairId && !isDemo && !touring && (
+                  {saved && !!me?.pairId && !touring && (
                     <Pressable
+                      disabled={planeSent}
                       onPress={() => router.push({ pathname: "/plane/send", params: { date: todayIso, spaceId } })}
-                      style={styles.planeBtn}
+                      style={[styles.planeBtn, planeSent && styles.planeBtnOff]}
                       accessibilityRole="button"
+                      accessibilityState={{ disabled: planeSent }}
                     >
-                      <Send size={17} color={C.pinkText} />
-                      <Text style={styles.planeBtnLabel}>{t.plSendPlane}</Text>
+                      <Send size={17} color={planeSent ? C.inkSoft : C.pinkText} />
+                      <Text style={[styles.planeBtnLabel, planeSent && { color: C.inkSoft }]}>{planeSent ? t.pgPlaneSent : t.plSendPlane}</Text>
                     </Pressable>
                   )}
 
@@ -358,20 +483,25 @@ export default function TodayScreen() {
       <InlineEditor
         visible={!!editingField}
         field={editingField}
-        initialValue={editingField ? e[editingField] : ""}
+        initialValue={editingField ? v[editingField] : ""}
         onSave={(text) => {
-          patchToday({ [editingField]: text });
-          if (text) showToast(t.savedToast);
+          setValue(editingField, text);
+          if (text && !drafting) showToast(t.savedToast);
         }}
         onClose={() => setEditingField(null)}
       />
       <MindEditor
         visible={mindOpen}
-        initialValue={e.mind}
-        initialTag={e.mindTag}
+        initialValue={v.mind}
+        initialTag={v.mindTag}
         onSave={(text, tag) => {
-          patchToday({ mind: text, mindTag: tag });
-          if (text) showToast(t.savedToast);
+          if (drafting) {
+            setValue("mind", text);
+            setValue("mindTag", tag);
+          } else {
+            patchToday({ mind: text, mindTag: tag });
+            if (text) showToast(t.savedToast);
+          }
         }}
         onClose={() => setMindOpen(false)}
       />
@@ -415,6 +545,14 @@ const styles = StyleSheet.create({
   revealBtnOff: { backgroundColor: "#F0E8D9" },
   revealBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5 },
   planeBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 12, borderRadius: 999, borderWidth: 1.5, borderColor: C.pinkDeep, backgroundColor: C.card },
+  planeBtnOff: { borderColor: C.cardBorder, backgroundColor: "#F1E9DC" },
+  needAll: { fontFamily: fonts.bodyRegular, fontSize: 13.5, color: C.inkSoft, textAlign: "center", marginTop: 6 },
+  editLink: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 6 },
+  editLinkLabel: { fontFamily: fonts.bodyBold, fontSize: 14.5, color: C.inkSoft },
+  commentBanner: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.pinkDeep, borderRadius: 18, paddingVertical: 14, paddingHorizontal: 16 },
+  commentTitle: { fontFamily: fonts.bodyExtraBold, fontSize: 16, color: "#fff" },
+  commentAsk: { fontFamily: fonts.bodyRegular, fontSize: 14.5, color: "#fff" },
+  commentSee: { fontFamily: fonts.bodyExtraBold, fontSize: 15, color: C.pinkDeep, backgroundColor: "#fff", borderRadius: 999, paddingVertical: 7, paddingHorizontal: 14, overflow: "hidden" },
   planeBtnLabel: { fontFamily: fonts.bodyExtraBold, fontSize: 15.5, color: C.pinkText },
   freeOpenNote: { fontFamily: fonts.bodyRegular, fontSize: 13, color: C.pinkText, marginTop: 7, textAlign: "center" },
   responseName: { fontFamily: fonts.bodyExtraBold, fontSize: 13.5, color: C.ink, marginBottom: 6 },
