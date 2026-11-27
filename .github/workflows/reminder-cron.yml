@@ -63,3 +63,14 @@ jobs:
         run: |
           curl -sS --max-time 120 -H "Authorization: Bearer $CRON_SECRET" https://futari-nine.vercel.app/api/cron/winback || true
           echo
+
+      - name: Health check (manual runs only)
+        # The "say it more gently" AI can stop answering without anyone noticing
+        # (models get retired, the free tier sheds load). A manual run of this
+        # workflow asks it for a real rewrite and prints whether it worked.
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl -sS --max-time 60 -H "Authorization: Bearer $CRON_SECRET" https://futari-nine.vercel.app/api/cron/health || true
+          echo
