@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, TextInput, Pressable, ScrollView, Alert, Share, StyleSheet, Linking, Platform } from "react-native";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { useAuth } from "../../lib/auth";
 import * as Clipboard from "expo-clipboard";
 import {
@@ -49,6 +49,12 @@ export default function SettingsScreen() {
     specialDays, widgetMode, chooseWidgetMode, widgetSpecialDayId, chooseWidgetSpecialDay,
     isPremium, entitled, canPair, trialActive, trialDaysLeft, trialAvailable,
   } = useApp();
+  // The partner may have subscribed since this screen was last open.
+  useFocusEffect(
+    useCallback(() => {
+      refreshMe?.().catch?.(() => {});
+    }, [refreshMe])
+  );
 
   const { invite: inviteParam } = useLocalSearchParams();
 
@@ -370,7 +376,15 @@ export default function SettingsScreen() {
             )}
           </View>
 
-          {!isPremium && (
+          {/* Covered by the partner's subscription: say so, rather than offering a
+              second Premium that the couple doesn't need. */}
+          {!isPremium && !!me?.premiumActive && (
+            <View style={styles.premiumNote}>
+              <Sparkles size={13} color={C.pinkText} />
+              <Text style={styles.premiumNoteText}>{t.pgCovered.replace("{n}", partnerName)}</Text>
+            </View>
+          )}
+          {!isPremium && !me?.premiumActive && (
             <Pressable
               onPress={() => {
                 router.push("/paywall");

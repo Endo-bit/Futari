@@ -34,8 +34,23 @@ function FeatureRow({ icon, label }) {
 export default function Paywall() {
   const router = useRouter();
   const { isSignedIn, isLoaded } = useAuth();
-  const { t, lang, showToast, trialActive, trialDaysLeft, waitingPages, partnerName } = useApp();
-  const { isAvailable, refresh } = useEntitlement();
+  const { t, lang, showToast, trialActive, trialDaysLeft, waitingPages, partnerName, me, refreshMe, refreshPairToday, isPremium } = useApp();
+  const { isAvailable, refresh, isLoading: entitlementLoading } = useEntitlement();
+  // Already covered by the partner's subscription: nothing to buy here.
+  const coveredByPartner = !isPremium && !!me?.premiumActive;
+
+  /* The purchase reaches our server through RevenueCat's webhook, a few
+     seconds later. Until it does, the server still calls the pair "free" and
+     keeps today's page locked — so wait for it (up to ~12 s), then refresh the
+     page state, rather than closing on a screen that still looks unpaid. */
+  const waitForServer = async () => {
+    for (let i = 0; i < 8; i++) {
+      const data = await refreshMe?.().catch(() => null);
+      if (data?.premiumActive || data?.plan === "premium") break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    await refreshPairToday?.().catch(() => {});
+  };
   const insets = useSafeAreaInsets();
   const Purchases = loadPurchases();
 
@@ -99,6 +114,7 @@ export default function Paywall() {
     try {
       await Purchases.purchasePackage(pkg);
       await refresh();
+      await waitForServer();
       track(EV.PURCHASE_COMPLETED, { plan: selectedPlan, product: pkg?.product?.identifier || null, price: pkg?.product?.price ?? null, currency: pkg?.product?.currencyCode || null });
       router.back();
     } catch (err) {
@@ -121,6 +137,7 @@ export default function Paywall() {
     try {
       await Purchases.restorePurchases();
       await refresh();
+      await waitForServer();
       track(EV.RESTORE_COMPLETED);
       router.back();
     } catch (err) {
@@ -203,8 +220,16 @@ export default function Paywall() {
               <Text style={styles.priceLabel}>{formatPrice(pkg.product, lang)}</Text>
               <Text style={styles.trialNote}>{t.paywallTrialNote}</Text>
             </View>
-            <SaveButton onPress={handlePurchase} disabled={purchasing} label={t.paywallCta} icon={<Check size={18} color="#fff" />} />
-            <Pressable onPress={handleRestore} disabled={purchasing} style={{ marginTop: 14 }}>
+            {coveredByPartner && <Text style={styles.waiting}>{t.pgCovered.replace("{n}", partnerName)}</Text>}
+            {/* Not before RevenueCat knows who is buying — a purchase made in that
+                moment would be filed under an anonymous id. */}
+            <SaveButton
+              onPress={handlePurchase}
+              disabled={purchasing || entitlementLoading || coveredByPartner}
+              label={t.paywallCta}
+              icon={<Check size={18} color="#fff" />}
+            />
+            <Pressable onPress={handleRestore} disabled={purchasing || entitlementLoading} style={{ marginTop: 14 }}>
               <Text style={styles.restore}>{t.paywallRestore}</Text>
             </Pressable>
           </>

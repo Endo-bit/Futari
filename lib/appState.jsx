@@ -283,6 +283,7 @@ export function AppStateProvider({ children }) {
       t,
       todayIso,
       entry: entries[todayIso] || null,
+      entries,
       pairToday,
       me,
       appMode: mode,
